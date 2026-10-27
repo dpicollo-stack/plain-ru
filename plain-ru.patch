@@ -1,0 +1,3830 @@
+diff --git a/FORK_RU.md b/FORK_RU.md
+new file mode 100644
+index 0000000..4eb79f6
+--- /dev/null
++++ b/FORK_RU.md
+@@ -0,0 +1,87 @@
++# Plain RU — форк Plain 0.3.0
++
++Русский интерфейс и настройка шрифтов поверх [gregmos/plain](https://github.com/gregmos/plain) 0.3.0 (MIT). Логика работы с файлами не тронута.
++
++## Что изменено
++
++**Язык интерфейса**
++- Все строки интерфейса переведены: меню, палитра команд, строка состояния, диалоги, баннеры, настройки, история версий, сравнение, поиск по папке, контекстные меню, подсказки, сообщения об ошибках. Даты (`27 окт 2026`), числа с правильным склонением (`1 файл / 3 файла / 5 файлов`).
++- Нативное меню macOS (Plain / Правка / Окно) — тоже на русском.
++- `Info.plist` объявляет русскую локализацию, поэтому системные окна «Открыть», «Сохранить», «Печать» показываются на русском.
++- Переключатель: Настройки → Язык (`русский · english`). Меню и диалоги переключаются сразу, остальное — после перезапуска.
++
++**Шрифты и размер**
++| Настройка | Варианты | По умолчанию |
++|---|---|---|
++| Размер интерфейса | 11–18 px | 14 (в оригинале 13) |
++| Шрифт интерфейса | как в системе (SF Pro) · моноширинный | как в системе |
++| Шрифт текста | без засечек (SF Pro) · с засечками (New York) · моноширинный · **любой установленный шрифт по имени** | без засечек |
++| Шрифт разметки | моноширинный · как текст | моноширинный |
++| Размер текста | 11–20 px | 15 (в оригинале 13,5) |
++
++- Код (блоки и `inline`) всегда моноширинный (IBM Plex Mono).
++- Режим «Визуально» показывается шрифтом текста, режим «Разметка» — шрифтом разметки.
++- Заголовки h2/h3 стали крупнее, h2 — не серый; размер кода, таблиц и сносок теперь следует за размером текста.
++- Своё имя шрифта: в поле под вариантами (например, `PT Serif`, `PT Sans`, `Charter`). Шрифт должен быть установлен на Mac; ничего не скачивается.
++
++## Где что в коде
++
++| Файл | Что |
++|---|---|
++| `src/i18n/index.ts` | `t()`, `tc()`, шаблоны `{}` / `{n}` / `{t}`, переключение языка |
++| `src/i18n/ru.ts` | словарь: английская строка → русская |
++| `src/i18n/plural.ts` | русское склонение числительных |
++| `src/app/fonts.ts` | наборы шрифтов, проверка имени шрифта |
++| `src/app/settings.ts`, `theme.ts` | новые ключи `appearance.*`, применение через CSS-переменные |
++| `src/ui/tokens.css` | `--font-ui / --font-text / --font-edit / --font-code`, `--ui-scale` |
++| `src-tauri/src/lib.rs` | язык нативного меню из `settings.json` |
++| `src-tauri/Info.plist` | русская локализация бандла |
++
++Перевод делается в местах показа (строка состояния, диалоги, меню, JSX), а не в логике: код по-прежнему пишет английские строки. Поэтому все 722 исходных теста проходят без правок, а новую версию оригинала проще подтянуть.
++
++## settings.json
++
++Файл общий с оригинальным Plain (`~/Library/Application Support/Plain/settings.json`). Новые ключи:
++
++```json
++"appearance": {
++  "theme": "system", "fontSize": 15, "contentWidth": 560,
++  "language": "ru",
++  "uiFont": "system",
++  "textFont": "sans",
++  "editFont": "mono",
++  "uiSize": 14
++}
++```
++
++Оригинальный Plain эти ключи игнорирует; форк читает файл оригинала без ошибок (недостающие ключи — по умолчанию).
++
++## Сборка
++
++### Вариант А — на своём Mac (≈15 минут первый раз)
++Нужны Xcode Command Line Tools, Node.js 22, Rust. Если чего-то нет:
++```
++xcode-select --install
++brew install node@22 rustup && rustup-init -y
++```
++Сборка — одной командой (ставит зависимости, гоняет тесты, собирает universal `.dmg`):
++```
++cd plain-ru
++./scripts/build-mac.sh
++```
++Готовый образ: `src-tauri/target/universal-apple-darwin/release/bundle/dmg/Plain_0.3.0_universal.dmg`.
++Собранное локально приложение не помечается карантином, «Открыть всё равно» не понадобится.
++
++### Вариант Б — GitHub Actions в своём форке
++1. Форкнуть `gregmos/plain` на GitHub, залить содержимое этой папки в ветку.
++2. Actions → macOS → Run workflow. Без Apple-секретов workflow подпишет сборку ad-hoc.
++3. Скачать `.dmg` из артефактов. При первом запуске: Системные настройки → Конфиденциальность и безопасность → «Открыть всё равно».
++
++## Обновление на новую версию оригинала
++1. Скачать новую версию, применить `plain-ru.patch` (`git apply --3way plain-ru.patch`).
++2. `npx vitest run` — тест `coverage` в `src/i18n/i18n.test.ts` перечислит новые английские строки, которых нет в словаре. Дописать их в `src/i18n/ru.ts`.
++
++## Известные ограничения
++- Сочетания клавиш в списке «Сочетания клавиш» для строк из CodeMirror (`ctrl d`, `alt ↑ ↓`) написаны как в оригинале — для Windows.
++- Сообщения об ошибках, которые приходят от macOS дословно, переводятся только для частых случаев (нет доступа, файл не найден, нет места и т. п.).
++- Подписи Mermaid-диаграмм и экспорт в HTML используют исходный моноширинный шрифт.
+diff --git a/scripts/build-mac.sh b/scripts/build-mac.sh
+new file mode 100755
+index 0000000..92ff4be
+--- /dev/null
++++ b/scripts/build-mac.sh
+@@ -0,0 +1,20 @@
++#!/bin/bash
++# Plain RU: сборка .dmg на своём Mac одной командой.
++# Нужны: Xcode Command Line Tools, Node.js 22, Rust (rustup).
++set -euo pipefail
++cd "$(dirname "$0")/.."
++
++for tool in node npm cargo rustup; do
++  command -v "$tool" >/dev/null || { echo "Не найден $tool — см. FORK_RU.md, раздел «Сборка»."; exit 1; }
++done
++
++rustup target add aarch64-apple-darwin x86_64-apple-darwin
++npm ci
++npx vitest run
++(cd src-tauri && cargo test)
++# Подпись ad-hoc, как в CI оригинала без сертификата Apple.
++APPLE_SIGNING_IDENTITY=- npx tauri build --target universal-apple-darwin --bundles app dmg
++
++echo
++echo "Готово:"
++ls -1 src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+diff --git a/src/app/App.tsx b/src/app/App.tsx
+index b59bd32..2a0d5ce 100644
+--- a/src/app/App.tsx
++++ b/src/app/App.tsx
+@@ -33,6 +33,7 @@ import { activeDoc, useStore, type Comparison, type Screen } from "./store";
+ import { watchSystemTheme } from "./theme";
+ import { installWatcher } from "./watcher";
+ import { installActivateDoc, installDocRegistry, installRecentSync } from "./windows";
++import { t } from "../i18n";
+ 
+ 
+ /**
+@@ -164,7 +165,7 @@ export function App() {
+   // Spec §3: the dirty marker also shows in the window title.
+   useEffect(() => {
+     if (!inTauri) return;
+-    const title = doc ? `${doc.title}${doc.dirty ? " •" : ""} — Plain` : "Plain";
++    const title = doc ? `${doc.path ? doc.title : t(doc.title)}${doc.dirty ? " •" : ""} — Plain` : "Plain";
+     void getCurrentWindow().setTitle(title);
+   }, [doc]);
+ 
+@@ -204,7 +205,7 @@ export function App() {
+           `Esc` does it, and so does this (spec §2a). */}
+       {focus && (
+         <button className="focus-exit" onClick={() => useStore.getState().setFocus(false)}>
+-          focus · esc
++          {t("focus · esc")}
+         </button>
+       )}
+       <Modal />
+diff --git a/src/app/commands.ts b/src/app/commands.ts
+index 83f0174..c20fbd7 100644
+--- a/src/app/commands.ts
++++ b/src/app/commands.ts
+@@ -29,6 +29,7 @@ import {
+   takeOpening,
+   type Holder,
+ } from "./windows";
++import { t } from "../i18n";
+ 
+ /**
+  * Reads each path into the open list; the first one becomes active.
+@@ -201,7 +202,7 @@ export async function openFile(): Promise<void> {
+   const picked = await open({
+     multiple: false,
+     directory: false,
+-    filters: [{ name: "markdown", extensions }],
++    filters: [{ name: t("markdown"), extensions }],
+   });
+   if (typeof picked === "string") await openPaths([picked]);
+ }
+@@ -391,6 +392,8 @@ export async function showAbout(): Promise<void> {
+     lines: [
+       "a markdown reader and editor that leaves your files alone.",
+       registered ? "registered for .md · .markdown" : "not registered for .md",
++      // Fork: say which build this is.
++      "plain ru: a fork with a russian interface and font settings.",
+     ],
+     actions: [
+       { label: "default apps", run: () => void go("ms-settings:defaultapps") },
+@@ -604,7 +607,7 @@ export async function exportPlainText(): Promise<void> {
+   const name = doc.path ? basename(doc.path) : doc.title;
+   const picked = await save({
+     defaultPath: `${name.replace(/\.[^.]+$/, "")}.txt`,
+-    filters: [{ name: "text", extensions: ["txt"] }],
++    filters: [{ name: t("text"), extensions: ["txt"] }],
+   });
+   if (typeof picked !== "string") return;
+ 
+@@ -710,7 +713,7 @@ export async function exportHtmlFile(): Promise<void> {
+   const folder = opening.path ? dirname(opening.path) : before.libraryPath;
+   const picked = await save({
+     defaultPath: folder ? `${folder}/${name}.html` : `${name}.html`,
+-    filters: [{ name: "html", extensions: ["html"] }],
++    filters: [{ name: t("html"), extensions: ["html"] }],
+   });
+   if (typeof picked !== "string") return;
+ 
+diff --git a/src/app/fonts.test.ts b/src/app/fonts.test.ts
+new file mode 100644
+index 0000000..814668c
+--- /dev/null
++++ b/src/app/fonts.test.ts
+@@ -0,0 +1,74 @@
++// Fork: font settings.
++
++import { describe, expect, it } from "vitest";
++import { isCustomFamily, MONO, normalizeTextFont, SANS, SERIF, textFontStack } from "./fonts";
++import { DEFAULTS, parseSettings, serializeSettings } from "./settings";
++
++describe("text font", () => {
++  it("maps presets to stacks", () => {
++    expect(textFontStack("sans")).toBe(SANS);
++    expect(textFontStack("serif")).toBe(SERIF);
++    expect(textFontStack("mono")).toBe(MONO);
++  });
++
++  it("puts an installed family in front of the sans stack", () => {
++    expect(textFontStack("PT Serif")).toBe(`"PT Serif", ${SANS}`);
++    expect(textFontStack("Шрифт Тест-2")).toBe(`"Шрифт Тест-2", ${SANS}`);
++  });
++
++  it("refuses anything that could leave the CSS declaration", () => {
++    for (const bad of ['x", serif; } body { display:none', "a;b", "a{b", "a,b", "a'b", "a\\b", "a/*b", ""]) {
++      expect(isCustomFamily(bad)).toBe(false);
++      expect(normalizeTextFont(bad, "sans")).toBe("sans");
++      expect(textFontStack(bad)).toBe(SANS);
++    }
++    expect(normalizeTextFont("x".repeat(65), "sans")).toBe("sans");
++  });
++
++  it("collapses inner spaces", () => {
++    expect(normalizeTextFont("  PT   Serif ", "sans")).toBe("PT Serif");
++  });
++});
++
++describe("settings.json, fork keys", () => {
++  it("defaults to Russian and the system fonts", () => {
++    expect(DEFAULTS.appearance).toMatchObject({
++      language: "ru",
++      uiFont: "system",
++      textFont: "sans",
++      editFont: "mono",
++      uiSize: 14,
++      fontSize: 15,
++    });
++  });
++
++  it("clamps and falls back value by value", () => {
++    const { settings } = parseSettings(
++      JSON.stringify({
++        appearance: { language: "de", uiFont: "comic", textFont: "a;b", editFont: "text", uiSize: 40 },
++      }),
++    );
++    expect(settings.appearance.language).toBe("ru");
++    expect(settings.appearance.uiFont).toBe("system");
++    expect(settings.appearance.textFont).toBe("sans");
++    expect(settings.appearance.editFont).toBe("text");
++    expect(settings.appearance.uiSize).toBe(18);
++  });
++
++  it("reads a file written by upstream Plain, which has none of the keys", () => {
++    const { settings, invalid } = parseSettings(
++      '{ "appearance": { "theme": "dark", "fontSize": 13.5, "contentWidth": 560 } }',
++    );
++    expect(invalid).toBe(false);
++    expect(settings.appearance.theme).toBe("dark");
++    expect(settings.appearance.fontSize).toBe(13.5);
++    expect(settings.appearance.language).toBe("ru");
++  });
++
++  it("writes the fork keys", () => {
++    const text = serializeSettings(DEFAULTS);
++    for (const key of ["language", "uiFont", "textFont", "editFont", "uiSize"]) {
++      expect(text).toContain(`"${key}"`);
++    }
++  });
++});
+diff --git a/src/app/fonts.ts b/src/app/fonts.ts
+new file mode 100644
+index 0000000..20b2760
+--- /dev/null
++++ b/src/app/fonts.ts
+@@ -0,0 +1,69 @@
++// Fork: interface and text fonts (Plain RU).
++//
++// Upstream draws everything in one monospace face. The fork keeps that face
++// for code and offers the system fonts for the interface and the text. Only
++// fonts already installed on the machine are used — nothing is downloaded,
++// and the CSP does not have to change: a font-family name is not a request.
++
++export type UiFont = "system" | "mono";
++export type EditFont = "mono" | "text";
++export type TextPreset = "sans" | "serif" | "mono";
++
++export const UI_FONTS: readonly UiFont[] = ["system", "mono"] as const;
++export const EDIT_FONTS: readonly EditFont[] = ["mono", "text"] as const;
++export const TEXT_PRESETS: readonly TextPreset[] = ["sans", "serif", "mono"] as const;
++
++/**
++ * SF Pro on macOS, Segoe UI on Windows; both carry Cyrillic. `-apple-system`
++ * is what WKWebView understands, `system-ui` covers the rest.
++ */
++export const SANS =
++  '-apple-system, BlinkMacSystemFont, system-ui, "Segoe UI Variable Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
++
++/**
++ * New York through `ui-serif` in WKWebView; PT Serif ships with macOS and is
++ * a good Cyrillic serif; Georgia is the Windows fallback.
++ */
++export const SERIF = 'ui-serif, "New York", "PT Serif", Georgia, "Times New Roman", serif';
++
++/** The upstream face, still bundled. */
++export const MONO = '"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace';
++
++/** Bounds for `appearance.uiSize`, in px; upstream draws the UI at 13. */
++export const UI_SIZE = { min: 11, max: 18, step: 0.5 } as const;
++
++/** The size the UI tokens in tokens.css were drawn for. */
++export const UI_BASE = 13;
++
++/**
++ * A family installed on the machine, typed by hand: letters of any script,
++ * digits, spaces, dots, hyphens and underscores. Quotes, commas, semicolons
++ * and braces are refused, so the value can never break out of the CSS
++ * declaration it lands in.
++ */
++const FAMILY = /^[\p{L}\p{N} ._-]{1,64}$/u;
++
++export function isCustomFamily(value: string): boolean {
++  const trimmed = value.trim();
++  return trimmed.length > 0 && FAMILY.test(trimmed) && !TEXT_PRESETS.includes(trimmed as TextPreset);
++}
++
++/** Normalizes `appearance.textFont`: a preset, a valid family name, or the fallback. */
++export function normalizeTextFont(value: unknown, fallback: string): string {
++  if (typeof value !== "string") return fallback;
++  const trimmed = value.trim();
++  if (TEXT_PRESETS.includes(trimmed as TextPreset)) return trimmed;
++  return isCustomFamily(trimmed) ? trimmed.replace(/\s+/g, " ") : fallback;
++}
++
++/** The CSS stack for a text font: a preset, or a family with the sans stack behind it. */
++export function textFontStack(value: string): string {
++  if (value === "serif") return SERIF;
++  if (value === "mono") return MONO;
++  if (value === "sans" || !isCustomFamily(value)) return SANS;
++  return `"${value.trim()}", ${SANS}`;
++}
++
++export function uiFontStack(value: UiFont): string {
++  return value === "mono" ? MONO : SANS;
++}
+diff --git a/src/app/save.ts b/src/app/save.ts
+index 5416d6c..f9d028d 100644
+--- a/src/app/save.ts
++++ b/src/app/save.ts
+@@ -30,6 +30,7 @@ import { snapshotBuffer } from "./history";
+ import { basename, dirname, pathKey } from "./paths";
+ import { activeDoc, useStore, type Comparison, type Doc } from "./store";
+ import { heldElsewhere } from "./windows";
++import { t } from "../i18n";
+ 
+ /* -------------------------------------------------------------- plumbing */
+ 
+@@ -247,7 +248,7 @@ async function saveAsNow(id: string): Promise<boolean> {
+   const extensions = store.settings.library.extensions.map((e) => e.replace(/^\./, ""));
+   const picked = await saveDialog({
+     defaultPath: suggestion,
+-    filters: [{ name: "markdown", extensions }],
++    filters: [{ name: t("markdown"), extensions }],
+   });
+   if (typeof picked !== "string") return false;
+ 
+diff --git a/src/app/settings.test.ts b/src/app/settings.test.ts
+index 9eb2431..a14bc76 100644
+--- a/src/app/settings.test.ts
++++ b/src/app/settings.test.ts
+@@ -41,7 +41,16 @@ describe("parseSettings", () => {
+ });
+ 
+ const CHANGED: Settings = {
+-  appearance: { theme: "dark", fontSize: 15, contentWidth: 700 },
++  appearance: {
++    theme: "dark",
++    fontSize: 15,
++    contentWidth: 700,
++    language: "en",
++    uiFont: "mono",
++    textFont: "PT Serif",
++    editFont: "text",
++    uiSize: 15.5,
++  },
+   read: { codeWrap: true },
+   edit: { lineNumbers: false, indentUnit: "tab", toolbar: false },
+   files: { newFileEol: "lf", autosave: 0 },
+diff --git a/src/app/settings.ts b/src/app/settings.ts
+index ebe39aa..b07bb7d 100644
+--- a/src/app/settings.ts
++++ b/src/app/settings.ts
+@@ -7,13 +7,29 @@ import { appDataDir, join } from "@tauri-apps/api/path";
+ import { exists, readTextFile } from "@tauri-apps/plugin-fs";
+ import { inTauri } from "./env";
+ import { isMac } from "./platform";
++import { DEFAULT_LANGUAGE, LANGUAGES, type Language } from "../i18n";
++import { EDIT_FONTS, normalizeTextFont, UI_FONTS, UI_SIZE, type EditFont, type UiFont } from "./fonts";
+ 
+ export type Theme = "system" | "light" | "dark";
+ export type IndentUnit = "tab" | 2 | 4;
+ export type Eol = "crlf" | "lf";
+ 
+ export interface Settings {
+-  appearance: { theme: Theme; fontSize: number; contentWidth: number };
++  appearance: {
++    theme: Theme;
++    fontSize: number;
++    contentWidth: number;
++    /** Fork: the interface language. */
++    language: Language;
++    /** Fork: menus, rail, status bar — the system font or the upstream mono. */
++    uiFont: UiFont;
++    /** Fork: read and rich — `sans`, `serif`, `mono` or an installed family. */
++    textFont: string;
++    /** Fork: the edit (source) view — mono, or the text font. */
++    editFont: EditFont;
++    /** Fork: the interface size in px; upstream draws it at 13. */
++    uiSize: number;
++  };
+   read: { codeWrap: boolean };
+   edit: { lineNumbers: boolean; indentUnit: IndentUnit; toolbar: boolean };
+   files: { newFileEol: Eol; autosave: number };
+@@ -51,7 +67,17 @@ export function defaultEol(): Eol {
+  */
+ export function defaultSettings(): Settings {
+   return {
+-    appearance: { theme: "system", fontSize: 13.5, contentWidth: 560 },
++    // Fork: a larger default, set for the proportional system font.
++    appearance: {
++      theme: "system",
++      fontSize: 15,
++      contentWidth: 560,
++      language: DEFAULT_LANGUAGE,
++      uiFont: "system",
++      textFont: "sans",
++      editFont: "mono",
++      uiSize: 14,
++    },
+     read: { codeWrap: false },
+     edit: { lineNumbers: true, indentUnit: 2, toolbar: true },
+     files: { newFileEol: defaultEol(), autosave: 0 },
+@@ -123,6 +149,11 @@ export function normalizeSettings(raw: unknown): Settings {
+         CONTENT_WIDTH.max,
+         DEFAULTS.appearance.contentWidth,
+       ),
++      language: oneOf(appearance["language"], LANGUAGES, DEFAULTS.appearance.language),
++      uiFont: oneOf(appearance["uiFont"], UI_FONTS, DEFAULTS.appearance.uiFont),
++      textFont: normalizeTextFont(appearance["textFont"], DEFAULTS.appearance.textFont),
++      editFont: oneOf(appearance["editFont"], EDIT_FONTS, DEFAULTS.appearance.editFont),
++      uiSize: num(appearance["uiSize"], UI_SIZE.min, UI_SIZE.max, DEFAULTS.appearance.uiSize),
+     },
+     read: { codeWrap: bool(read["codeWrap"], DEFAULTS.read.codeWrap) },
+     edit: {
+@@ -192,6 +223,11 @@ export function serializeSettings(settings: Settings): string {
+         theme: settings.appearance.theme,
+         fontSize: settings.appearance.fontSize,
+         contentWidth: settings.appearance.contentWidth,
++        language: settings.appearance.language,
++        uiFont: settings.appearance.uiFont,
++        textFont: settings.appearance.textFont,
++        editFont: settings.appearance.editFont,
++        uiSize: settings.appearance.uiSize,
+       },
+       read: { codeWrap: settings.read.codeWrap },
+       edit: {
+diff --git a/src/app/store.ts b/src/app/store.ts
+index 05406b5..38691c1 100644
+--- a/src/app/store.ts
++++ b/src/app/store.ts
+@@ -7,6 +7,7 @@ import type { FileInfo } from "./fs";
+ import { DEFAULTS, saveSettings, type Settings, type Theme } from "./settings";
+ import { applyAppearance, applyReading, applyTheme, flipTheme, resolveTheme } from "./theme";
+ import { basename, pathKey } from "./paths";
++import { setLanguage } from "../i18n";
+ 
+ /** Over this, highlighting is off and read renders on demand (spec §8). */
+ export const LARGE_TEXT = 2 * 1024 * 1024;
+@@ -469,6 +470,7 @@ export const useStore = create<AppState>()((set, get) => ({
+   recentLibraries: [],
+ 
+   applySettings: (settings) => {
++    setLanguage(settings.appearance.language);
+     applyTheme(settings.appearance.theme);
+     applyAppearance(settings.appearance);
+     applyReading(settings.read);
+diff --git a/src/app/theme.ts b/src/app/theme.ts
+index 885cb19..78089bc 100644
+--- a/src/app/theme.ts
++++ b/src/app/theme.ts
+@@ -2,6 +2,7 @@
+ // stamp the attribute. matchMedia only tells us which label to show.
+ 
+ import type { Settings, Theme } from "./settings";
++import { textFontStack, UI_BASE, uiFontStack, MONO } from "./fonts";
+ 
+ const dark = typeof window !== "undefined" ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+ 
+@@ -36,6 +37,12 @@ export function applyAppearance(appearance: Settings["appearance"]): void {
+   root.setProperty("--content-width", `${appearance.contentWidth}px`);
+   // The edit column keeps the mockup's 80px lead over the read column.
+   root.setProperty("--edit-width", `${appearance.contentWidth + 80}px`);
++  // Fork: fonts and the interface size.
++  const text = textFontStack(appearance.textFont);
++  root.setProperty("--font-ui", uiFontStack(appearance.uiFont));
++  root.setProperty("--font-text", text);
++  root.setProperty("--font-edit", appearance.editFont === "text" ? text : MONO);
++  root.setProperty("--ui-scale", String(Math.round((appearance.uiSize / UI_BASE) * 1000) / 1000));
+ }
+ 
+ /**
+diff --git a/src/editor/findPanel.ts b/src/editor/findPanel.ts
+index 8a4a193..9ddc09c 100644
+--- a/src/editor/findPanel.ts
++++ b/src/editor/findPanel.ts
+@@ -14,6 +14,7 @@ import {
+ } from "@codemirror/search";
+ import type { EditorState } from "@codemirror/state";
+ import type { Command, EditorView, Panel, ViewUpdate } from "@codemirror/view";
++import { t } from "../i18n";
+ 
+ const MAX_COUNT = 2000;
+ 
+@@ -67,12 +68,12 @@ class FindPanel implements Panel {
+     const query = getSearchQuery(view.state);
+ 
+     this.find = element("input", "find-field");
+-    this.find.placeholder = "find";
++    this.find.placeholder = t("find");
+     this.find.value = query.search;
+     this.find.setAttribute("main-field", "true");
+ 
+     this.replace = element("input", "find-field");
+-    this.replace.placeholder = "replace";
++    this.replace.placeholder = t("replace");
+     this.replace.value = query.replace;
+ 
+     this.count = element("span", "find-count");
+@@ -81,9 +82,13 @@ class FindPanel implements Panel {
+       wholeWord: element("button", "find-toggle", "W"),
+       regexp: element("button", "find-toggle", ".*"),
+     };
++    // Fork: the three glyphs say nothing on their own.
++    this.toggles.caseSensitive.title = t("match case");
++    this.toggles.wholeWord.title = t("whole word");
++    this.toggles.regexp.title = t("regular expression");
+ 
+-    const replaceButton = element("button", "link", "replace");
+-    const replaceAllButton = element("button", "link", "all");
++    const replaceButton = element("button", "link", t("replace"));
++    const replaceAllButton = element("button", "link", t("all"));
+     this.replaceRow = element("span", "find-replace");
+     this.replaceRow.append(this.replace, replaceButton, replaceAllButton);
+     this.replaceRow.hidden = true;
+@@ -97,7 +102,7 @@ class FindPanel implements Panel {
+       this.toggles.regexp,
+       this.count,
+       this.replaceRow,
+-      element("span", "find-hint", "esc"),
++      element("span", "find-hint", t("esc")),
+     );
+ 
+     this.find.addEventListener("input", () => this.commit());
+diff --git a/src/editor/images.ts b/src/editor/images.ts
+index 6d0af85..c8be802 100644
+--- a/src/editor/images.ts
++++ b/src/editor/images.ts
+@@ -12,6 +12,7 @@ import { useStore, type Doc } from "../app/store";
+ import { allowAssetDir } from "../read/assets";
+ import { syncTarget } from "./sync";
+ import { liveEditor } from "./EditView";
++import { t } from "../i18n";
+ 
+ const FOLDER = "assets";
+ 
+@@ -198,7 +199,7 @@ export async function insertImageFromFile(): Promise<boolean> {
+     picked = await open({
+       multiple: false,
+       directory: false,
+-      filters: [{ name: "image", extensions: IMAGE_EXTENSIONS.map((e) => e.slice(1)) }],
++      filters: [{ name: t("image"), extensions: IMAGE_EXTENSIONS.map((e) => e.slice(1)) }],
+     });
+   } catch (error) {
+     useStore.getState().setMessage(`couldn't open the picker — ${reason(error)}`);
+diff --git a/src/editor/setup.ts b/src/editor/setup.ts
+index 68a98be..4e0181f 100644
+--- a/src/editor/setup.ts
++++ b/src/editor/setup.ts
+@@ -50,6 +50,7 @@ import { richConf } from "./rich";
+ import { storeSync } from "./sync";
+ import { formatToolbar } from "./toolbar";
+ import { editorTheme, highlightStyle } from "./theme";
++import { t } from "../i18n";
+ 
+ export const gutterConf = new Compartment();
+ /** Save As turns a read-only copy into an editable file (review #5). */
+@@ -164,7 +165,12 @@ export function gutterExtension(on: boolean): Extension {
+ 
+ /** Mockup 1d, for a document with nothing in it yet (UX #25). */
+ export const PLACEHOLDER = "type here, or just keep writing.";
+-export const placeholderHint = placeholder(PLACEHOLDER);
++// Fork: built when an editor opens, so it is in the interface language.
++export const placeholderHint = placeholder(() => {
++  const hint = document.createElement("span");
++  hint.textContent = t(PLACEHOLDER);
++  return hint;
++});
+ 
+ const reducedMotion =
+   typeof window !== "undefined" &&
+@@ -316,7 +322,7 @@ export function editorExtensions(doc: Doc, settings: Settings): Extension {
+     EditorView.clickAddsSelectionRange.of((event) => event.altKey),
+     readOnlyConf.of(EditorState.readOnly.of(doc.readOnly)),
+     // Microcopy is lowercase latin (spec §1.4); this is CodeMirror's own.
+-    EditorState.phrases.of({ "Go to line": "go to line", go: "go", close: "×" }),
++    EditorState.phrases.of({ "Go to line": t("go to line"), go: t("go"), close: "×" }),
+     EditorView.lineWrapping,
+     placeholderHint,
+     lineLook,
+diff --git a/src/editor/theme.ts b/src/editor/theme.ts
+index 2e2a428..999638f 100644
+--- a/src/editor/theme.ts
++++ b/src/editor/theme.ts
+@@ -19,7 +19,8 @@ export const highlightStyle = HighlightStyle.define([
+     textDecoration: "underline",
+     textUnderlineOffset: "3px",
+   },
+-  { tag: t.monospace, backgroundColor: "var(--surface)" },
++  // Fork: code keeps the mono face when edit or rich uses the text face.
++  { tag: t.monospace, backgroundColor: "var(--surface)", fontFamily: "var(--font-code)" },
+   { tag: [t.comment, t.contentSeparator, t.labelName, t.atom], color: "var(--muted)" },
+   // `#`, `>`, `-`, `1.`, backticks, `[`, `](`, `)` — plain weight even inside a heading.
+   {
+@@ -35,7 +36,8 @@ export const editorTheme = EditorView.theme({
+     height: "100%",
+     color: "var(--fg)",
+     backgroundColor: "transparent",
+-    fontFamily: "var(--font)",
++    // Fork: its own family — mono by default, the text face in rich.
++    fontFamily: "var(--font-edit)",
+     fontSize: "var(--fs-edit)",
+   },
+   "&.cm-focused": { outline: "none" },
+@@ -80,7 +82,8 @@ export const editorTheme = EditorView.theme({
+ 
+   // Front matter parses as a setext heading; it is metadata, not a title.
+   ".cm-frontmatter, .cm-frontmatter span": { color: "var(--muted)", fontWeight: "400" },
+-  ".cm-code": { backgroundColor: "var(--surface)" },
++  // Fork: code blocks keep the mono face in rich and in a text-face edit.
++  ".cm-code": { backgroundColor: "var(--surface)", fontFamily: "var(--font-code)" },
+ 
+   ".cm-placeholder": { color: "var(--faint)" },
+ 
+diff --git a/src/editor/toolbar.ts b/src/editor/toolbar.ts
+index 4fc2f90..6a8d03d 100644
+--- a/src/editor/toolbar.ts
++++ b/src/editor/toolbar.ts
+@@ -12,6 +12,7 @@ import {
+   toggleQuote,
+   toggleStrike,
+ } from "./commands";
++import { t, tc } from "../i18n";
+ 
+ /** Mockup 1d: the strip sits 38px above the top of the selection. */
+ const OFFSET = 38;
+@@ -102,8 +103,8 @@ class FormatToolbar {
+       }
+       const element = document.createElement("button");
+       if (button.className) element.className = button.className;
+-      element.title = button.title;
+-      element.textContent = button.label;
++      element.title = t(button.title);
++      element.textContent = tc("btn", button.label);
+       // mousedown, not click: the default would take the selection away
+       // before the command has anything to work on.
+       element.addEventListener("mousedown", (event) => {
+diff --git a/src/i18n/i18n.test.ts b/src/i18n/i18n.test.ts
+new file mode 100644
+index 0000000..03395a0
+--- /dev/null
++++ b/src/i18n/i18n.test.ts
+@@ -0,0 +1,175 @@
++// Fork: the Russian interface. These tests unpin the language that
++// vitest.setup.ts pins to English for the upstream suite.
++
++import { afterEach, beforeEach, describe, expect, it } from "vitest";
++import { commands } from "../app/registry";
++import { menuModel, type MenuNode } from "../app/menu";
++import { hasTranslation, months, plural, setLanguage, setLanguageForTests, t, tc } from ".";
++
++beforeEach(() => {
++  setLanguageForTests(null);
++  setLanguage("ru");
++});
++
++afterEach(() => setLanguageForTests("en"));
++
++describe("plural", () => {
++  it.each([
++    [1, "файл"],
++    [2, "файла"],
++    [5, "файлов"],
++    [11, "файлов"],
++    [21, "файл"],
++    [22, "файла"],
++    [112, "файлов"],
++    ["1,204", "файла"],
++  ])("%s → %s", (n, form) => {
++    expect(plural(n, "файл", "файла", "файлов")).toBe(form);
++  });
++});
++
++describe("t", () => {
++  it("translates exact text and leaves unknown text alone", () => {
++    expect(t("save as…")).toBe("Сохранить как…");
++    expect(t("my notes.md")).toBe("my notes.md");
++  });
++
++  it("fills placeholders and translates nested pieces in lower case", () => {
++    expect(t("couldn't save — file changed on disk")).toBe(
++      "Не удалось сохранить — файл изменился на диске",
++    );
++    expect(t("close notes.md first")).toBe("Сначала закройте «notes.md»");
++  });
++
++  it("uses Russian plurals", () => {
++    expect(t("1,204 words")).toBe("1,204 слова");
++    expect(t("5 files")).toBe("5 файлов");
++    expect(t("3 lines in 1 file")).toBe("3 строки в 1 файле");
++    expect(t("2 of 7 differences")).toBe("2 из 7 различий");
++  });
++
++  it("prefers the longer literal over a generic pattern", () => {
++    expect(t("couldn't open settings — Permission denied (os error 13)")).toBe(
++      "Не удалось открыть настройки — нет доступа",
++    );
++  });
++
++  it("translates glued messages piece by piece", () => {
++    expect(t("line endings normalized to lf · snapshot failed — not a snapshot")).toBe(
++      "Концы строк приведены к lf · Версия для истории не записалась — это не версия из истории",
++    );
++  });
++
++  it("never lets a number pattern claim ordinary words", () => {
++    expect(tc("menu", "new file")).toBe("Новый файл");
++    expect(t("my new file")).toBe("my new file");
++  });
++
++  it("takes a context key first", () => {
++    expect(tc("menu", "edit")).toBe("Правка");
++    expect(t("edit")).toBe("Разметка");
++    expect(tc("menu", "read")).toBe("Чтение");
++  });
++
++  it("translates month abbreviations in dates", () => {
++    expect(months("4 sep 2025")).toBe("4 сен 2025");
++  });
++
++  it("stays English when asked", () => {
++    setLanguage("en");
++    expect(t("save as…")).toBe("save as…");
++  });
++});
++
++describe("coverage", () => {
++  it("every command title has a translation", () => {
++    const missing = commands.map((c) => c.title).filter((title) => !hasTranslation(title));
++    expect(missing).toEqual([]);
++  });
++
++  it("every menu label has a translation", () => {
++    const missing: string[] = [];
++    const walk = (nodes: MenuNode[]) => {
++      for (const node of nodes) {
++        if (node.kind === "separator") continue;
++        // Heading levels are digits, recent files are file names.
++        if (
++          /^\d$/.test(node.label) ||
++          node.key.startsWith("recent-") ||
++          node.key.startsWith("lib-") ||
++          node.key.startsWith("reopen-")
++        ) {
++          continue;
++        }
++        if (!hasTranslation(`menu|${node.label}`) && !hasTranslation(node.label)) missing.push(node.label);
++        if (node.kind === "submenu") walk(node.items);
++      }
++    };
++    for (const section of menuModel()) {
++      if (!hasTranslation(`menu|${section.label}`)) missing.push(section.label);
++      walk(section.items);
++    }
++    expect(missing).toEqual([]);
++  });
++
++  /**
++   * Every literal the code hands to t()/tc(), and every literal message,
++   * label, title and dialog line the display points translate. A new
++   * upstream string shows up here instead of on the screen in English.
++   */
++  it("every literal the interface shows has a translation", () => {
++    const sources = Object.entries(
++      import.meta.glob<string>(["../**/*.ts", "../**/*.tsx", "!../**/*.test.*", "!../i18n/**"], {
++        query: "?raw",
++        import: "default",
++        eager: true,
++      }),
++    ).map(([, text]) => text);
++    expect(sources.length).toBeGreaterThan(80);
++
++    const patterns = [
++      /\bt\("([^"]+)"\)/g,
++      /setMessage\("([^"]+)"\)/g,
++      /setNote\("([^"]+)"\)/g,
++      /\b(?:label|title|text): "([^"]+)"/g,
++    ];
++    // Literals that are meant to stay as they are.
++    const keep = new Set(["B", "I", "S", "`", "‹›", "H1", "H2", "H3", "•", "1.", "☐", "»", "─", "∑", "==", "[[ ]]", "[^]", "2", "4", "crlf", "lf", "utf-8", "cp1251", "utf-16", "русский", "english", "a > b", "Plain"]);
++    const missing = new Set<string>();
++    for (const source of sources) {
++      for (const pattern of patterns) {
++        for (const match of source.matchAll(pattern)) {
++          const text = match[1]!;
++          if (keep.has(text) || !/[a-z]/.test(text)) continue;
++          if (!hasTranslation(text) && !hasTranslation(`menu|${text}`) && !hasTranslation(`choice|${text}`) && !hasTranslation(`btn|${text}`)) {
++            missing.add(text);
++          }
++        }
++      }
++    }
++    expect([...missing]).toEqual([]);
++
++    // Template literals: each `${…}` stands for a value the pattern keys
++    // carry as {} or {t}. Conditionals inside `${}` are not followed.
++    const templates = [
++      /\bt\(`([^`]+)`\)/g,
++      /setMessage\(`([^`]+)`\)/g,
++      /setNote\(`([^`]+)`\)/g,
++      /\b(?:title|text): `([^`]+)`/g,
++      /lines: \[`([^`]+)`/g,
++    ];
++    const missingTemplates = new Set<string>();
++    for (const source of sources) {
++      for (const pattern of templates) {
++        for (const match of source.matchAll(pattern)) {
++          const raw = match[1]!;
++          if (raw.includes("?") && raw.includes(":") && raw.includes("${")) continue;
++          const sample = raw.replace(/\$\{[^}]*\}/g, "7");
++          if (!/[a-z]{2}/.test(sample)) continue;
++          if (!hasTranslation(sample)) missingTemplates.add(raw);
++        }
++      }
++    }
++    expect([...missingTemplates]).toEqual([]);
++  });
++});
+diff --git a/src/i18n/index.ts b/src/i18n/index.ts
+new file mode 100644
+index 0000000..faa3781
+--- /dev/null
++++ b/src/i18n/index.ts
+@@ -0,0 +1,180 @@
++// Fork: interface language (Plain RU).
++//
++// The upstream app writes every piece of microcopy in English, right where it
++// is used. Rather than touching each call site, the fork translates at the
++// places where text reaches the screen: the status bar, banners, dialogs, the
++// menu, the palette, the shortcut list, tooltips and the static JSX. The
++// logic keeps speaking English, so the upstream tests stay valid and a newer
++// upstream version can be merged with few conflicts.
++//
++// The dictionary is keyed by the English text. A key may hold placeholders:
++//   {}   a piece passed through as is (a file name)
++//   {n}  a number, digits with `,` or `.` (so `{n} files` never eats `new file`)
++//   {t}  a piece that is itself translated (an error message, a mode name)
++// The value refers to them as {1}, {2}… in order, or is a function of them.
++
++import { ru } from "./ru";
++
++export type Language = "ru" | "en";
++
++export const LANGUAGES: readonly Language[] = ["ru", "en"] as const;
++
++/** The fork ships Russian first; settings.json can say "en". */
++export const DEFAULT_LANGUAGE: Language = "ru";
++
++export type Translation = string | ((...parts: string[]) => string);
++
++let current: Language = "en";
++let pinned: Language | null = null;
++
++/**
++ * The upstream suite asserts English microcopy, so vitest.setup.ts pins the
++ * language the way it pins the platform; `null` hands it back to settings.
++ */
++export function setLanguageForTests(value: Language | null): void {
++  pinned = value;
++  current = value ?? current;
++}
++
++export function language(): Language {
++  return current;
++}
++
++/**
++ * Called once at startup with the value from settings.json, and again when
++ * the setting changes. Text already on screen follows on its next render;
++ * the settings screen says that a restart applies it everywhere.
++ */
++export function setLanguage(next: Language): void {
++  current = pinned ?? next;
++  if (typeof document !== "undefined") document.documentElement.lang = current;
++}
++
++interface Pattern {
++  re: RegExp;
++  /** How much fixed text the key has; more means more specific. */
++  literal: number;
++  nested: boolean[];
++  value: Translation;
++}
++
++let exact: Map<string, Translation> | null = null;
++let patterns: Pattern[] = [];
++
++function escape(text: string): string {
++  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
++}
++
++function compile(): void {
++  exact = new Map();
++  patterns = [];
++  for (const [key, value] of Object.entries(ru)) {
++    if (!/\{[tn]?\}/.test(key)) {
++      exact.set(key, value);
++      continue;
++    }
++    const nested: boolean[] = [];
++    const source = key
++      .split(/(\{[tn]?\})/)
++      .map((piece) => {
++        if (piece === "{n}") {
++          nested.push(false);
++          return "(\\d[\\d,.]*)";
++        }
++        if (piece === "{}" || piece === "{t}") {
++          nested.push(piece === "{t}");
++          // A placeholder never swallows ` · `: that is where the app glues
++          // two messages together, and each half is translated on its own.
++          return "((?:(?! · )[\\s\\S])*?)";
++        }
++        return escape(piece);
++      })
++      .join("");
++    patterns.push({
++      re: new RegExp(`^${source}$`),
++      literal: key.replace(/\{[tn]?\}/g, "").length,
++      nested,
++      value,
++    });
++  }
++  // Longer literal text first, so "couldn't open settings — {t}" wins over
++  // "couldn't open {} — {t}".
++  patterns.sort((a, b) => b.literal - a.literal);
++}
++
++function fill(value: Translation, parts: string[]): string {
++  if (typeof value === "function") return value(...parts);
++  return value.replace(/\{(\d)\}/g, (_, n: string) => parts[Number(n) - 1] ?? "");
++}
++
++/**
++ * The text in the interface language. Unknown text comes back unchanged, so
++ * a string the dictionary has not caught up with stays readable in English.
++ */
++export function t(text: string): string;
++export function t(text: string | null | undefined): string | null | undefined;
++export function t(text: string | null | undefined): string | null | undefined {
++  if (current === "en" || !text) return text;
++  if (!exact) compile();
++  const found = exact!.get(text);
++  if (found !== undefined) return fill(found, []);
++  for (const pattern of patterns) {
++    const match = pattern.re.exec(text);
++    if (!match) continue;
++    const parts = match.slice(1).map((part, index) => (pattern.nested[index] ? inner(part) : part));
++    return fill(pattern.value, parts);
++  }
++  // Messages the app glues together — `line endings normalized · snapshot
++  // failed — …` — are translated piece by piece.
++  if (text.includes(" · ")) {
++    const pieces = text.split(" · ");
++    const translated = pieces.map((piece) => t(piece));
++    if (translated.some((piece, index) => piece !== pieces[index])) return translated.join(" · ");
++  }
++  return text;
++}
++
++/**
++ * A translated piece inside a sentence: `Не удалось сохранить — файл
++ * изменился на диске`, not `— Файл`. Abbreviations (`UTF-8`) keep their case.
++ */
++function inner(part: string): string {
++  const translated = t(part);
++  if (translated === part) return part;
++  return /^\p{Lu}\p{Ll}/u.test(translated) ? translated[0]!.toLowerCase() + translated.slice(1) : translated;
++}
++
++/** For tests and for the coverage check: is there a translation at all? */
++function hasExact(text: string): boolean {
++  if (!exact) compile();
++  return exact!.has(text);
++}
++
++export function hasTranslation(text: string): boolean {
++  if (!exact) compile();
++  if (exact!.has(text)) return true;
++  return patterns.some((pattern) => pattern.re.test(text));
++}
++
++export { plural } from "./plural";
++
++/**
++ * The same English word can need two Russian ones: the `edit` menu is
++ * «Правка», the `edit` mode is «Разметка». A context key `menu|edit` wins
++ * when the dictionary has one.
++ */
++export function tc(context: string, text: string): string {
++  if (current === "en") return text;
++  // Context keys are always exact: a pattern such as `{} file` must not
++  // claim `menu|new file`.
++  const key = `${context}|${text}`;
++  return hasExact(key) ? t(key) : t(text);
++}
++
++const MONTH_WORDS = /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\b/g;
++
++/** `4 sep 2025` -> `4 сен 2025`, for dates formatted by upstream helpers. */
++export function months(text: string): string {
++  if (current === "en") return text;
++  return text.replace(MONTH_WORDS, (month) => tc("month", month));
++}
+diff --git a/src/i18n/plural.ts b/src/i18n/plural.ts
+new file mode 100644
+index 0000000..aff5df6
+--- /dev/null
++++ b/src/i18n/plural.ts
+@@ -0,0 +1,9 @@
++/** Russian plural: 1 файл, 2 файла, 5 файлов. Takes `1,204` as well as 1204. */
++export function plural(n: number | string, one: string, few: string, many: string): string {
++  const value = Math.abs(Math.trunc(Number(String(n).replace(/[^\d.-]/g, ""))));
++  const ten = value % 10;
++  const hundred = value % 100;
++  if (ten === 1 && hundred !== 11) return one;
++  if (ten >= 2 && ten <= 4 && (hundred < 12 || hundred > 14)) return few;
++  return many;
++}
+diff --git a/src/i18n/ru.ts b/src/i18n/ru.ts
+new file mode 100644
+index 0000000..3f776a3
+--- /dev/null
++++ b/src/i18n/ru.ts
+@@ -0,0 +1,539 @@
++// Fork: the Russian interface (Plain RU).
++//
++// Keys are the upstream English text, exactly as the code writes it; see
++// index.ts for the {} / {t} placeholders. Microcopy follows macOS Russian
++// conventions: sentence case, «…» for anything that opens a dialog.
++//
++// Context keys (`menu|edit`, `rail|open`…) exist where one English word needs
++// two Russian ones; tc() in index.ts looks them up first.
++
++import { isMac } from "../app/platform";
++import { plural } from "./plural";
++import type { Translation } from "./index";
++
++const files = (n: string) => `${n} ${plural(n, "файл", "файла", "файлов")}`;
++const words = (n: string) => `${n} ${plural(n, "слово", "слова", "слов")}`;
++const lines = (n: string) => `${n} ${plural(n, "строка", "строки", "строк")}`;
++const inFiles = (n: string) => `${n} ${plural(n, "файле", "файлах", "файлах")}`;
++const explorer = () => (isMac() ? "Показать в Finder" : "Показать в Проводнике");
++
++export const ru: Record<string, Translation> = {
++  /* ------------------------------------------------------------ menu bar */
++  "menu|file": "Файл",
++  "menu|edit": "Правка",
++  "menu|view": "Вид",
++  "menu|help": "Справка",
++  "menu|recent": "Недавние",
++  "menu|recent libraries": "Недавние библиотеки",
++  "menu|export": "Экспорт",
++  "menu|reopen as": "Открыть заново как",
++  "menu|heading": "Заголовок",
++  "menu|insert": "Вставка",
++  "menu|callout": "Выноска",
++  "menu|theme": "Тема",
++  "menu|html…": "HTML…",
++  "menu|text…": "Текст…",
++  "menu|pdf…": "PDF…",
++  "menu|off": "Без заголовка",
++  "menu|note": "Заметка",
++  "menu|tip": "Совет",
++  "menu|important": "Важно",
++  "menu|warning": "Предупреждение",
++  "menu|caution": "Осторожно",
++  "menu|system": "Как в системе",
++  "menu|light": "Светлая",
++  "menu|dark": "Тёмная",
++  "nothing yet": "Пока пусто",
++  Untitled: "Без названия",
++
++  /* ------------------------------------------- commands (registry titles) */
++  "new file": "Новый файл",
++  "new window": "Новое окно",
++  "open file…": "Открыть файл…",
++  "open library…": "Открыть библиотеку…",
++  save: "Сохранить",
++  "save as…": "Сохранить как…",
++  "version history…": "История версий…",
++  "copy as plain text": "Копировать как простой текст",
++  "export as text…": "Экспорт в текст…",
++  "export as html…": "Экспорт в HTML…",
++  "print / export as pdf…": "Печать / экспорт в PDF…",
++  close: "Закрыть",
++  "close window": "Закрыть окно",
++  "reload from disk": "Перечитать с диска",
++  "reopen as utf-8": "Открыть заново как UTF-8",
++  "reopen as cp1251": "Открыть заново как cp1251",
++  "reopen as utf-16": "Открыть заново как UTF-16",
++  "reveal in explorer": explorer,
++  "copy path": "Копировать путь",
++  exit: "Выход",
++  "toggle read/edit": "Чтение / разметка",
++  read: "Чтение",
++  edit: "Разметка",
++  rich: "Визуально",
++  split: "Рядом",
++  "toggle rail": "Боковая панель",
++  library: "Библиотека",
++  files: "Файлы",
++  outline: "Оглавление",
++  "toggle theme": "Сменить тему",
++  "light theme": "Светлая тема",
++  "dark theme": "Тёмная тема",
++  "system theme": "Тема как в системе",
++  "line numbers": "Номера строк",
++  "always on top": "Поверх всех окон",
++  fullscreen: "Во весь экран",
++  focus: "Фокус",
++  "zoom in": "Увеличить",
++  "zoom out": "Уменьшить",
++  "reset zoom": "Реальный размер",
++  undo: "Отменить",
++  redo: "Повторить",
++  bold: "Жирный",
++  italic: "Курсив",
++  "inline code": "Код в строке",
++  "code block": "Блок кода",
++  "link…": "Ссылка…",
++  quote: "Цитата",
++  list: "Список",
++  checkbox: "Флажок",
++  "heading {n}": "Заголовок {1}",
++  "no heading": "Без заголовка",
++  strikethrough: "Зачёркнутый",
++  highlight: "Выделение цветом",
++  "bulleted list": "Маркированный список",
++  "numbered list": "Нумерованный список",
++  "task list": "Список задач",
++  table: "Таблица",
++  "image…": "Изображение…",
++  "horizontal rule": "Горизонтальная линия",
++  footnote: "Сноска",
++  "math inline": "Формула в строке",
++  "math block": "Блок формулы",
++  wikilink: "Вики-ссылка",
++  "callout: {}": "Выноска: {1}",
++  "callout: note": "Выноска: заметка",
++  "callout: tip": "Выноска: совет",
++  "callout: important": "Выноска: важно",
++  "callout: warning": "Выноска: предупреждение",
++  "callout: caution": "Выноска: осторожно",
++  "quick search": "Быстрый поиск",
++  "command palette": "Палитра команд",
++  find: "Найти",
++  replace: "Заменить",
++  "find next": "Найти далее",
++  "find previous": "Найти назад",
++  "go to line": "Перейти к строке",
++  "search in folder": "Поиск по папке",
++  "next file": "Следующий файл",
++  "previous file": "Предыдущий файл",
++  back: "Назад",
++  forward: "Вперёд",
++  "settings…": "Настройки…",
++  "open settings.json": "Открыть settings.json",
++  shortcuts: "Сочетания клавиш",
++  about: "О программе",
++
++  /* ------------------------------------------------- mode bar, status bar */
++  "deleted on disk": "удалён с диска",
++  "read-only": "только чтение",
++  unsaved: "не сохранён",
++  "large file": "большой файл",
++  new: "новый",
++  saved: "сохранён",
++  recreated: "создан заново",
++  restored: "восстановлено",
++  "took the disk version": "взята версия с диска",
++  "reloaded from disk": "перечитан с диска",
++  "decoded with errors": "прочитан с ошибками",
++  "previous version kept in history": "прежняя версия — в истории",
++  "{} · previous version kept in history": "{1} · прежняя версия — в истории",
++  "reopened as {}": "открыт заново как {1}",
++  "{} · decoded with errors": "{1} · прочитан с ошибками",
++  "ln {n}, col {n}": "стр. {1}, кол. {2}",
++  "{n} words": words,
++  "{n} min": "{1} мин",
++  "reopen as…": "Открыть заново как…",
++  "switch theme": "Сменить тему",
++  light: "светлая",
++  dark: "тёмная",
++
++  /* ---------------------------------------------------------------- rail */
++  search: "поиск",
++  tags: "Теги",
++  "{n} file": files,
++  "{n} files": files,
++  "1 file": "1 файл",
++  "links here": "Ссылаются сюда",
++  "nothing links here": "Сюда ничего не ссылается",
++  "rail|open": "Открытые",
++  "nothing open": "Ничего не открыто",
++  "collapse the rail": "Свернуть боковую панель",
++  "no headings": "Нет заголовков",
++  "rail width": "Ширина боковой панели",
++  "column width": "Ширина колонки",
++
++  /* ---------------------------------------------------- empty, file tree */
++  "open a file": "Открыть файл",
++  "open a library": "Открыть библиотеку",
++  recent: "Недавние",
++  libraries: "Библиотеки",
++  "new folder": "Новая папка",
++  "New folder": "Новая папка",
++  delete: "Удалить",
++  open: "Открыть",
++  rename: "Переименовать",
++  "no markdown files": "Нет файлов Markdown",
++  "{} — can't be read": "{1} — не читается",
++  "a name is needed": "Нужно имя",
++  "windows does not allow that character": () =>
++    isMac() ? "Этот символ нельзя использовать в имени" : "Windows не разрешает этот символ",
++  "a name cannot end with a dot or a space": "Имя не может кончаться точкой или пробелом",
++  "move {} to the recycle bin?": "Переместить «{1}» в Корзину?",
++  "{} and everything in it.": "{1} и всё, что внутри.",
++  "move to recycle bin": "Переместить в Корзину",
++  "moved to the recycle bin": "Перемещено в Корзину",
++  "couldn't {t} — no free name": "Не удалось {1} — нет свободного имени",
++  "create the file": "создать файл",
++  "create the folder": "создать папку",
++  "couldn't read the library folder": "Не удалось прочитать папку библиотеки",
++
++  /* --------------------------------------------------------- quick search */
++  "search files, or > for commands": "Поиск файлов, или > для команд",
++  esc: "esc",
++  "nothing found": "Ничего не найдено",
++  actions: "Команды",
++  move: "выбор",
++  "foot|open": "открыть",
++  "open in edit": "открыть в разметке",
++
++  /* ------------------------------------------------------------ shortcuts */
++  "keys|files": "Файлы",
++  "keys|navigation": "Навигация",
++  "keys|view": "Вид",
++  "keys|formatting": "Форматирование",
++  "keys|editing": "Редактирование",
++  "keys|tree": "Дерево файлов",
++  "keys|other": "Прочее",
++  "heading 1–6": "Заголовок 1–6",
++  "select next occurrence": "Выделить следующее вхождение",
++  "add cursor above / below": "Добавить курсор выше / ниже",
++  "move line": "Переместить строку",
++  "duplicate line": "Дублировать строку",
++  "delete line": "Удалить строку",
++  "fold / unfold": "Свернуть / развернуть",
++  "paste as plain text": "Вставить как простой текст",
++  "indent / outdent list item": "Сдвинуть пункт списка вправо / влево",
++  "delete to recycle bin": "Удалить в Корзину",
++  "shortcuts work in any keyboard layout": "Сочетания работают в любой раскладке",
++
++  /* ----------------------------------------------------------- format bar */
++  code: "Код",
++  "heading 1": "Заголовок 1",
++  "heading 2": "Заголовок 2",
++  "heading 3": "Заголовок 3",
++  link: "Ссылка",
++  image: "Изображение",
++  math: "Формула",
++  "btn|link": "ссылка",
++  "btn|quote": "цитата",
++  "btn|img": "изобр.",
++  "btn|table": "таблица",
++
++  /* ------------------------------------------------------- read, find bar */
++  "month|jan": "янв",
++  "month|feb": "фев",
++  "month|mar": "мар",
++  "month|apr": "апр",
++  "month|may": "мая",
++  "month|jun": "июн",
++  "month|jul": "июл",
++  "month|aug": "авг",
++  "month|sep": "сен",
++  "month|oct": "окт",
++  "month|nov": "ноя",
++  "month|dec": "дек",
++  "no matches": "Нет совпадений",
++  "match case": "Учитывать регистр",
++  "whole word": "Слово целиком",
++  "regular expression": "Регулярное выражение",
++  all: "все",
++  go: "перейти",
++  "this file is larger than 2 mb, so it was not rendered.":
++    "Файл больше 2 МБ, поэтому он не отрисован.",
++  "render anyway": "Всё равно отрисовать",
++  "couldn't build this document — {t}": "Не удалось собрать документ — {1}",
++  "open the source": "Открыть исходник",
++  "notes tagged #{}": "Заметки с тегом #{1}",
++  "copied #{}": "Скопировано: #{1}",
++  copied: "Скопировано",
++  "{} · not found": "{1} · не найдено",
++  "{} · load": "{1} · загрузить",
++  "inline image blocked": "Встроенное изображение заблокировано",
++  "no folder for this image": "Нет папки для этого изображения",
++  "outside folder · allow": "Вне папки · разрешить",
++  "couldn't load this image": "Не удалось загрузить изображение",
++  "diagram failed": "Диаграмма не построилась",
++  "type here, or just keep writing.": "Пишите здесь — или просто продолжайте.",
++  "focus · esc": "фокус · esc",
++
++  /* ------------------------------------------------------ context menus */
++  cut: "Вырезать",
++  copy: "Копировать",
++  paste: "Вставить",
++  "select all": "Выбрать всё",
++  "open link": "Открыть ссылку",
++  "copy link": "Копировать ссылку",
++  "open image": "Открыть изображение",
++  "nothing selected": "Ничего не выделено",
++  "link copied": "Ссылка скопирована",
++  "path copied": "Путь скопирован",
++  "couldn't copy": "Не удалось скопировать",
++  "couldn't paste": "Не удалось вставить",
++  "selection changed — nothing cut": "Выделение изменилось — ничего не вырезано",
++  "document changed — nothing pasted": "Документ изменился — ничего не вставлено",
++
++  /* ------------------------------------------------------- folder search */
++  "find in files": "Найти в файлах",
++  "search in": "Поиск в",
++  "{n} line in {n} file": (n, m) => `${lines(n)} в ${inFiles(m)}`,
++  "{n} line in {n} files": (n, m) => `${lines(n)} в ${inFiles(m)}`,
++  "{n} lines in {n} file": (n, m) => `${lines(n)} в ${inFiles(m)}`,
++  "{n} lines in {n} files": (n, m) => `${lines(n)} в ${inFiles(m)}`,
++  "showing the first of them": "показаны первые",
++  "{n} files over 2 mb skipped": (n) => `пропущено ${files(n)} больше 2 МБ`,
++  "{n} files could not be read": (n) => `не прочитано: ${files(n)}`,
++  "invalid regex": "Неверное регулярное выражение",
++
++  /* -------------------------------------------------------------- library */
++  "sort|modified": "изменён",
++  "sort|name": "имя",
++  "sort|created": "создан",
++  "+{n} more": "ещё {1}",
++  "show all": "Показать все",
++  "no files": "Нет файлов",
++  edited: "изменён",
++  "{n} w": "{1} сл.",
++  "library · {}": "Библиотека · {1}",
++  "no library — open a folder first": "Нет библиотеки — сначала откройте папку",
++
++  /* ----------------------------------------------------- history, compare */
++  "version history": "История версий",
++  "kept for thirty days: one copy every five minutes of saving, and one before every change made outside plain. restoring only changes the buffer — the file is written when you save.":
++    "Хранится тридцать дней: копия раз в пять минут при сохранении и копия перед каждым изменением файла вне Plain. Восстановление меняет только текст в окне — файл записывается, когда вы сохраните.",
++  "reading…": "Читаю…",
++  "nothing saved from here yet": "Отсюда пока ничего не сохранялось",
++  "restore this version?": "Восстановить эту версию?",
++  "{} goes back to {}.": "«{1}» вернётся к версии от {2}.",
++  "what the buffer holds now is kept as a version of its own.":
++    "Текущий текст сохранится отдельной версией.",
++  restore: "Восстановить",
++  compare: "Сравнить",
++  "delete this version?": "Удалить эту версию?",
++  "{n} b": "{1} Б",
++  "{n} kb": "{1} КБ",
++  snapshot: "версия",
++  buffer: "текст в окне",
++  disk: "диск",
++  "take snapshot": "Взять версию",
++  "take disk": "Взять с диска",
++  "keep mine": "Оставить мой",
++  previous: "Назад",
++  next: "Далее",
++  "no differences": "Различий нет",
++  "1 difference": "1 различие",
++  "{n} of {n} differences": (a, b) =>
++    `${a} из ${b} ${plural(b, "различия", "различий", "различий")}`,
++  "couldn't read that snapshot": "Не удалось прочитать эту версию",
++
++  /* ------------------------------------------------------------- recovery */
++  "just now": "только что",
++  "{n}m ago": "{1} мин назад",
++  "{n}h ago": "{1} ч назад",
++  "{n}d ago": (n) => `${n} ${plural(n, "день", "дня", "дней")} назад`,
++  "discard {}?": "Удалить черновик «{1}»?",
++  "it goes to the recycle bin.": "Он отправится в Корзину.",
++  "discard 1 draft?": "Удалить 1 черновик?",
++  "discard {n} drafts?": (n) => `Удалить ${n} ${plural(n, "черновик", "черновика", "черновиков")}?`,
++  "they go to the recycle bin.": "Они отправятся в Корзину.",
++  "unsaved work found": "Найдены несохранённые правки",
++  "plain was closed with edits that never reached the disk. discarded drafts go to the recycle bin.":
++    "Plain закрылся с правками, которые не попали на диск. Удалённые черновики отправляются в Корзину.",
++  "never saved": "не сохранялся",
++  discard: "Удалить",
++  "restore all": "Восстановить все",
++  "discard all": "Удалить все",
++  later: "Позже",
++  cancel: "Отмена",
++  dismiss: "Скрыть",
++  "can't write recovery draft": "Не удаётся записать черновик для восстановления",
++  "can't write recovery draft — {t}": "Не удаётся записать черновик для восстановления — {1}",
++  "couldn't discard {} — {t}": "Не удалось удалить «{1}» — {2}",
++
++  /* ------------------------------------------------------------- settings */
++  settings: "Настройки",
++  "appearance.language": "Язык",
++  "menus and dialogs; everything follows after a restart":
++    "Меню и диалоги сразу, остальное — после перезапуска",
++  "appearance.theme": "Тема",
++  "system follows windows until you pick one": () =>
++    isMac() ? "«Как в системе» следует настройке macOS" : "«Как в системе» следует настройке Windows",
++  "appearance.uiSize": "Размер интерфейса",
++  "menus, sidebar and status bar, in pixels": "Меню, боковая панель и строка состояния, в пикселях",
++  "appearance.uiFont": "Шрифт интерфейса",
++  "the font of menus, sidebar and dialogs": "Меню, боковая панель и диалоги",
++  "appearance.textFont": "Шрифт текста",
++  "read and rich; or the name of a font installed on this computer":
++    "Для чтения и визуального режима; можно вписать имя установленного шрифта",
++  "e.g. PT Serif": "например, PT Serif",
++  "only letters, digits, spaces, dots and hyphens":
++    "В имени шрифта — только буквы, цифры, пробелы, точки и дефисы",
++  "appearance.editFont": "Шрифт разметки",
++  "the markdown source in edit": "Исходный Markdown в режиме «Разметка»",
++  "appearance.fontSize": "Размер текста",
++  "the text of the document, in pixels": "Текст документа, в пикселях",
++  "appearance.contentWidth": "Ширина колонки",
++  "drag the column edges to change it too; edit adds 80":
++    "Можно тянуть за края колонки; в разметке на 80 шире",
++  "read.codeWrap": "Перенос в коде",
++  "wrap long lines inside code blocks": "Переносить длинные строки в блоках кода",
++  "edit.toolbar": "Панель форматирования",
++  "the bar above the editor": "Панель над редактором",
++  "edit.lineNumbers": "Номера строк",
++  "ctrl shift 9 still flips them for the session": () =>
++    isMac() ? "⌘⇧9 переключает их до конца сеанса" : "Ctrl+Shift+9 переключает их до конца сеанса",
++  "edit.indentUnit": "Отступ",
++  "what the file already uses wins over this": "Если в файле уже есть отступы, берутся они",
++  "files.newFileEol": "Концы строк",
++  "line endings for files plain creates; {} here": "Для новых файлов Plain; здесь обычно {1}",
++  "files.autosave": "Автосохранение",
++  "seconds; 0 turns it off": "Секунды; 0 — выключено",
++  "library.tags": "Теги",
++  "#tags in the sidebar and the meta line": "#теги в боковой панели и над текстом",
++  "library.extensions": "Расширения",
++  "what the file tree shows, comma separated": "Что показывать в дереве файлов, через запятую",
++  defaults: "Сбросить",
++  "reset every setting?": "Сбросить все настройки?",
++  "the file goes back to what plain ships with.": "Файл вернётся к тому, с чем поставляется Plain.",
++  reset: "Сбросить",
++  less: "меньше",
++  more: "больше",
++  "choice|on": "вкл",
++  "choice|off": "выкл",
++  "choice|system": "как в системе",
++  "choice|light": "светлая",
++  "choice|dark": "тёмная",
++  "choice|mono": "моноширинный",
++  "choice|sans": "без засечек",
++  "choice|serif": "с засечками",
++  "choice|text": "как текст",
++  "choice|tab": "табуляция",
++  "settings.json is invalid": "settings.json повреждён",
++
++  /* ---------------------------------------------------- saving, reopening */
++  "nothing to save": "Нечего сохранять",
++  "read-only — use save as…": "Только чтение — используйте «Сохранить как…»",
++  "line endings normalized to {}": "Концы строк приведены к {1}",
++  "snapshot failed — {t}": "Версия для истории не записалась — {1}",
++  "couldn't save — {t}": "Не удалось сохранить — {1}",
++  retry: "Повторить",
++  "{} is open in another window — close it there first":
++    "«{1}» открыт в другом окне — сначала закройте его там",
++  "{} is open in another window": "«{1}» открыт в другом окне",
++  "close {} first": "Сначала закройте «{1}»",
++  "the copy is utf-8": "Копия сохранена в UTF-8",
++  "{} is not utf-8": "«{1}» не в UTF-8",
++  "saving converts it from {} to utf-8.": "При сохранении файл будет перекодирован из {1} в UTF-8.",
++  "convert to utf-8": "Перекодировать в UTF-8",
++  "converted to utf-8": "Перекодирован в UTF-8",
++  "text had undecodable bytes": "В тексте есть нераспознанные байты",
++  "{} was read as {} and parts of it did not fit.":
++    "«{1}» прочитан как {2}, и часть текста не распозналась.",
++  "saving replaces those bytes for good; `reopen as…` can try another encoding first.":
++    "Сохранение заменит эти байты навсегда; «Открыть заново как…» позволит сначала попробовать другую кодировку.",
++  "save anyway": "Всё равно сохранить",
++  "file changed on disk": "Файл изменился на диске",
++  reload: "Перечитать",
++  "save my copy as…": "Сохранить мою копию как…",
++  "reload from disk?": "Перечитать с диска?",
++  "your changes to {} are lost.": "Ваши правки в «{1}» будут потеряны.",
++  "couldn't reload — {t}": "Не удалось перечитать — {1}",
++  "not reopened — the buffer changed": "Не открыт заново — текст в окне изменился",
++  "couldn't reopen — {t}": "Не удалось открыть заново — {1}",
++  "reopen as {}?": "Открыть заново как {1}?",
++  reopen: "Открыть заново",
++  "couldn't compare — {t}": "Не удалось сравнить — {1}",
++  "the file changed again — compare shows it now": "Файл снова изменился — сравнение уже обновлено",
++  "couldn't keep a copy of the current text — nothing was replaced":
++    "Не удалось сохранить копию текущего текста — ничего не заменено",
++  "the buffer changed — nothing was replaced": "Текст в окне изменился — ничего не заменено",
++  "couldn't restore — {t}": "Не удалось восстановить — {1}",
++  "unsaved changes": "Есть несохранённые правки",
++  "{n} files have unsaved changes": (n) =>
++    `В ${n} ${plural(n, "файле", "файлах", "файлах")} есть несохранённые правки`,
++  "don't save": "Не сохранять",
++
++  /* ------------------------------------------------------------- commands */
++  "hard-linked — other names keep the old text": "Жёсткая ссылка — под другими именами останется старый текст",
++  "couldn't open {} — {t}": "Не удалось открыть «{1}» — {2}",
++  "unsaved changes — save or reload from banner":
++    "Есть несохранённые правки — сохраните или перечитайте через панель вверху",
++  "always on top off": "Поверх всех окон: выкл",
++  "couldn't reveal — {t}": "Не удалось показать — {1}",
++  "couldn't copy the path": "Не удалось скопировать путь",
++  "couldn't open settings — {t}": "Не удалось открыть настройки — {1}",
++  "couldn't open the link": "Не удалось открыть ссылку",
++  "registered for .md": "Назначен для .md",
++  unregistered: "Больше не назначен для .md",
++  "couldn't change the association — {t}": "Не удалось изменить связь с файлами — {1}",
++  "plain {}": "Plain {1}",
++  "a markdown reader and editor that leaves your files alone.":
++    "Читалка и редактор Markdown, которые не трогают ваши файлы.",
++  "registered for .md · .markdown": "Назначен для .md · .markdown",
++  "not registered for .md": "Не назначен для .md",
++  "plain ru: a fork with a russian interface and font settings.":
++    "Plain RU — форк с русским интерфейсом и настройкой шрифтов.",
++  "default apps": "Приложения по умолчанию",
++  github: "GitHub",
++  register: "Назначить",
++  unregister: "Снять назначение",
++  "too large to render": "Слишком большой для отрисовки",
++  "copied as plain text · {n} words": (n) => `Скопировано как простой текст · ${words(n)}`,
++  "exported {}": "Экспортировано: {1}",
++  "couldn't export — {t}": "Не удалось экспортировать — {1}",
++  "couldn't open the print dialog": "Не удалось открыть окно печати",
++  "export needs the app": "Экспорт работает только в приложении",
++  "the document was closed": "Документ закрыт",
++  "couldn't check {} — {t}": "Не удалось проверить «{1}» — {2}",
++  "couldn't open a window — {t}": "Не удалось открыть окно — {1}",
++  "couldn't delete — {t}": "Не удалось удалить — {1}",
++  "couldn't open — {t}": "Не удалось открыть — {1}",
++  "couldn't rename — {t}": "Не удалось переименовать — {1}",
++  "couldn't create the file — {t}": "Не удалось создать файл — {1}",
++  "couldn't create the folder — {t}": "Не удалось создать папку — {1}",
++  "couldn't {t} — {t}": "Не удалось {1} — {2}",
++  "zoom {n}%": "Масштаб {1}%",
++  "zoom is not available": "Масштаб недоступен",
++  markdown: "Markdown",
++  text: "Текст",
++  html: "HTML",
++
++  /* ----------------------------------------------------------- images */
++  "image saved to {}": "Изображение сохранено в {1}",
++  "save the file first": "Сначала сохраните файл",
++  "couldn't save the image — {t}": "Не удалось сохранить изображение — {1}",
++  "couldn't open the picker — {t}": "Не удалось открыть выбор файла — {1}",
++  "couldn't copy the image — {t}": "Не удалось скопировать изображение — {1}",
++
++  /* ------------------------------------- errors coming from Rust and the OS */
++  "{} is gone": "«{1}» больше не существует",
++  "no parent folder": "нет родительской папки",
++  "not a snapshot": "это не версия из истории",
++  "Permission denied (os error {})": "нет доступа",
++  "Operation not permitted (os error {})": "операция не разрешена",
++  "No such file or directory (os error {})": "файл или папка не найдены",
++  "File exists (os error {})": "файл уже существует",
++  "Is a directory (os error {})": "это папка",
++  "No space left on device (os error {})": "на диске нет места",
++  "Read-only file system (os error {})": "диск только для чтения",
++};
+diff --git a/src/read/FindBar.tsx b/src/read/FindBar.tsx
+index 1edc10f..8ae6c5a 100644
+--- a/src/read/FindBar.tsx
++++ b/src/read/FindBar.tsx
+@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
+ import { matchesChord } from "../app/chords";
+ import { FIND_STEP } from "./events";
+ import { clearPaint, findRanges, paint, scrollRangeIntoView } from "./find";
++import { t } from "../i18n";
+ 
+ interface Props {
+   /** The scroll container; also the tree that gets searched. */
+@@ -72,7 +73,7 @@ export function FindBar({ container, revision, focusToken, onClose }: Props) {
+         ref={input}
+         className="find-input"
+         value={query}
+-        placeholder="find"
++        placeholder={t("find")}
+         spellCheck={false}
+         onChange={(event) => {
+           setQuery(event.target.value);
+@@ -85,17 +86,17 @@ export function FindBar({ container, revision, focusToken, onClose }: Props) {
+         }}
+       />
+       <span className="find-count">
+-        {query === "" ? "" : ranges.length === 0 ? "no matches" : `${at + 1} / ${ranges.length}`}
++        {query === "" ? "" : ranges.length === 0 ? t("no matches") : `${at + 1} / ${ranges.length}`}
+       </span>
+       <button
+         className={"find-toggle" + (caseSensitive ? " is-active" : "")}
+         onClick={() => setCaseSensitive((value) => !value)}
+-        title="match case"
++        title={t("match case")}
+       >
+         Aa
+       </button>
+       <button className="link" onClick={onClose}>
+-        close
++        {t("close")}
+       </button>
+     </div>
+   );
+diff --git a/src/read/ReadView.tsx b/src/read/ReadView.tsx
+index 30f22ce..b75e7f9 100644
+--- a/src/read/ReadView.tsx
++++ b/src/read/ReadView.tsx
+@@ -38,6 +38,7 @@ import { render } from "./pipeline";
+ import { readingMinutes } from "./words";
+ import "katex/dist/katex.min.css";
+ import "../ui/read.css";
++import { t, tc } from "../i18n";
+ 
+ /** Anything that owns the focus more than a document does. */
+ const FOCUS_HOLDERS = "input, textarea, [contenteditable='true'], .modal, [cmdk-root]";
+@@ -80,7 +81,7 @@ let pendingAnchor: { id: string; hash: string } | null = null;
+ const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+ 
+ function formatDate(date: Date): string {
+-  return `${date.getDate()} ${MONTHS[date.getMonth()] ?? ""} ${date.getFullYear()}`;
++  return `${date.getDate()} ${tc("month", MONTHS[date.getMonth()] ?? "")} ${date.getFullYear()}`;
+ }
+ 
+ function frontmatterDate(value: unknown): Date | null {
+@@ -242,8 +243,8 @@ export function ReadView({ doc }: { doc: Doc }) {
+     const date = frontmatterDate(result.frontmatter?.["date"]) ?? mtime;
+     return [
+       ...(date ? [formatDate(date)] : []),
+-      `${result.words.toLocaleString("en-US")} words`,
+-      `${readingMinutes(result.words)} min`,
++      t(`${result.words.toLocaleString("en-US")} words`),
++      t(`${readingMinutes(result.words)} min`),
+     ].join(" · ");
+   }, [result, mtime]);
+ 
+@@ -517,16 +518,16 @@ export function ReadView({ doc }: { doc: Doc }) {
+         <div className="read-column">
+           {skip ? (
+             <div className="read-large">
+-              <p>this file is larger than 2 mb, so it was not rendered.</p>
++              <p>{t("this file is larger than 2 mb, so it was not rendered.")}</p>
+               <button className="link" onClick={() => setForced(true)}>
+-                render anyway
++                {t("render anyway")}
+               </button>
+             </div>
+           ) : failure ? (
+             <div className="read-large">
+-              <p>couldn't build this document — {failure}</p>
++              <p>{t(`couldn't build this document — ${failure}`)}</p>
+               <button className="link" onClick={() => useStore.getState().setMode("edit")}>
+-                open the source
++                {t("open the source")}
+               </button>
+             </div>
+           ) : (
+@@ -540,7 +541,7 @@ export function ReadView({ doc }: { doc: Doc }) {
+                       key={tag}
+                       className="meta-tag"
+                       onClick={() => filterByTag(tag)}
+-                      title={`notes tagged #${tag}`}
++                      title={t(`notes tagged #${tag}`)}
+                     >
+                       #{tag}
+                     </button>
+diff --git a/src/read/callout.ts b/src/read/callout.ts
+index 8539eb9..82f10e2 100644
+--- a/src/read/callout.ts
++++ b/src/read/callout.ts
+@@ -13,6 +13,7 @@
+ 
+ import { visit } from "unist-util-visit";
+ import type { Blockquote, PhrasingContent, Root, RootContent } from "mdast";
++import { tc } from "../i18n";
+ 
+ const MARKER = /^\[!([A-Za-z][A-Za-z0-9_-]*)\][+-]?[ \t]*/;
+ 
+@@ -78,7 +79,10 @@ export function remarkCallouts() {
+       if (body.length > 0) first.children = body;
+       else node.children.shift();
+ 
+-      const label: PhrasingContent[] = [{ type: "text", value: kind.toUpperCase() }];
++      // Fork: the type in the interface language (`> [!note]` → ЗАМЕТКА).
++      const label: PhrasingContent[] = [
++        { type: "text", value: tc("menu", kind.toLowerCase()).toUpperCase() },
++      ];
+       const parts: RootContent[] = [span("type", label)];
+       if (!isBlank(title)) {
+         const trimmed = [...title];
+diff --git a/src/read/dom.ts b/src/read/dom.ts
+index 520f342..eca1fa0 100644
+--- a/src/read/dom.ts
++++ b/src/read/dom.ts
+@@ -12,6 +12,7 @@ import { allowAssetDir, assetUrl, isAllowedPath } from "./assets";
+ import { highlight } from "./highlight";
+ import { decode, folderOf, isAbsolutePath, joinPath, resolveWikiLink } from "./links";
+ import { renderDiagram } from "./mermaid";
++import { t } from "../i18n";
+ 
+ export interface EnhanceOptions {
+   /** Folder of the open file; relative paths resolve against it. */
+@@ -31,7 +32,7 @@ function holder(text: string, action: string, attrs: Record<string, string>): HT
+   node.className = "img-holder";
+   node.dataset["action"] = action;
+   for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value);
+-  node.textContent = text;
++  node.textContent = t(text);
+   return node;
+ }
+ 
+diff --git a/src/read/mermaid.ts b/src/read/mermaid.ts
+index 85d365c..601bb6c 100644
+--- a/src/read/mermaid.ts
++++ b/src/read/mermaid.ts
+@@ -1,6 +1,7 @@
+ // Mermaid, imported only when a diagram actually scrolls into view
+ // (spec §5.1). A broken diagram shows its source plus the error line.
+ 
++import { t } from "../i18n";
+ let mermaid: Promise<typeof import("mermaid").default> | null = null;
+ let configured: "light" | "dark" | null = null;
+ let seq = 0;
+@@ -23,7 +24,7 @@ async function load(theme: "light" | "dark") {
+ 
+ function reason(error: unknown): string {
+   const text = error instanceof Error ? error.message : String(error);
+-  return text.split("\n").slice(0, 2).join(" ").trim() || "diagram failed";
++  return text.split("\n").slice(0, 2).join(" ").trim() || t("diagram failed");
+ }
+ 
+ /**
+diff --git a/src/ui/Banner.tsx b/src/ui/Banner.tsx
+index 41fa115..30aca44 100644
+--- a/src/ui/Banner.tsx
++++ b/src/ui/Banner.tsx
+@@ -1,16 +1,17 @@
+ import { Fragment } from "react";
+ import type { Banner as BannerState } from "../app/store";
++import { t } from "../i18n";
+ 
+ /** 36px strip under the mode bar. Never takes focus. */
+ export function Banner({ banner }: { banner: BannerState }) {
+   return (
+     <div className="banner" role="status">
+-      <span className="banner-text">{banner.text}</span>
++      <span className="banner-text">{t(banner.text)}</span>
+       {banner.actions?.map((action) => (
+         <Fragment key={action.label}>
+           <span className="sep">·</span>
+           <button className="link" onClick={action.run}>
+-            {action.label}
++            {t(action.label)}
+           </button>
+         </Fragment>
+       ))}
+diff --git a/src/ui/Diff.tsx b/src/ui/Diff.tsx
+index bbf0343..4c40bc5 100644
+--- a/src/ui/Diff.tsx
++++ b/src/ui/Diff.tsx
+@@ -4,6 +4,7 @@ import { takeComparison } from "../app/save";
+ import { useStore, type Comparison } from "../app/store";
+ import "./dialogs.css";
+ import { useScreenFocus } from "./screen";
++import { t } from "../i18n";
+ 
+ /**
+  * The conflict banner's `compare` and the history screen's, one screen (spec
+@@ -71,9 +72,9 @@ export function DiffScreen({ comparison }: { comparison: Comparison }) {
+     <div className="screen" tabIndex={0} ref={scroller}>
+       <div className="screen-column screen-wide">
+         <div className="screen-head">
+-          <div className="screen-title">compare</div>
++          <div className="screen-title">{t("compare")}</div>
+           <button className="link" onClick={() => close(null)}>
+-            close
++            {t("close")}
+           </button>
+         </div>
+ 
+@@ -81,30 +82,32 @@ export function DiffScreen({ comparison }: { comparison: Comparison }) {
+           {/* The glyphs say which side is which, and the gutter repeats them
+               line by line — colour alone would not. */}
+           <span className="diff-mark">−</span>
+-          <span className="diff-head">{comparison.leftLabel}</span>
++          <span className="diff-head">{t(comparison.leftLabel)}</span>
+           <span className="sep">·</span>
+           <span className="diff-mark">+</span>
+-          <span className="diff-head">{comparison.rightLabel}</span>
++          <span className="diff-head">{t(comparison.rightLabel)}</span>
+ 
+           <span className="diff-nav">
+             {blocks.length > 1 && (
+               <>
+                 <button className="link" onClick={() => step(-1)} title="shift f3">
+-                  previous
++                  {t("previous")}
+                 </button>
+                 <span className="sep">·</span>
+                 <button className="link" onClick={() => step(1)} title="f3">
+-                  next
++                  {t("next")}
+                 </button>
+                 <span className="sep">·</span>
+               </>
+             )}
+             <span className="screen-when">
+-              {blocks.length === 0
+-                ? "no differences"
+-                : blocks.length === 1
+-                  ? "1 difference"
+-                  : `${current + 1} of ${blocks.length} differences`}
++              {t(
++                blocks.length === 0
++                  ? "no differences"
++                  : blocks.length === 1
++                    ? "1 difference"
++                    : `${current + 1} of ${blocks.length} differences`,
++              )}
+             </span>
+           </span>
+         </div>
+@@ -128,11 +131,11 @@ export function DiffScreen({ comparison }: { comparison: Comparison }) {
+ 
+         <div className="screen-actions">
+           <button className="link" onClick={() => close(null)}>
+-            keep mine
++            {t("keep mine")}
+           </button>
+           <span className="sep">·</span>
+           <button className="link" onClick={take}>
+-            {comparison.takeLabel}
++            {t(comparison.takeLabel)}
+           </button>
+         </div>
+       </div>
+diff --git a/src/ui/DocView.tsx b/src/ui/DocView.tsx
+index 461b678..755f923 100644
+--- a/src/ui/DocView.tsx
++++ b/src/ui/DocView.tsx
+@@ -21,7 +21,11 @@ export function DocView({ doc }: { doc: Doc }) {
+     <>
+       {/* Above the editor, under the mode bar and any banner (spec §5.2). */}
+       {doc.mode !== "read" && <FormatBar />}
+-      <div className={"content-frame" + (doc.mode === "read" ? "" : " is-edit")}>
++      <div
++        className={
++          "content-frame" + (doc.mode === "read" ? "" : " is-edit") + (doc.mode === "rich" ? " is-rich" : "")
++        }
++      >
+         {doc.mode === "read" ? (
+           <ReadView doc={doc} />
+         ) : (
+diff --git a/src/ui/EditorContextMenu.tsx b/src/ui/EditorContextMenu.tsx
+index 5c411d3..705674e 100644
+--- a/src/ui/EditorContextMenu.tsx
++++ b/src/ui/EditorContextMenu.tsx
+@@ -14,6 +14,7 @@ import { selectAll } from "@codemirror/commands";
+ import type { EditorView } from "@codemirror/view";
+ import { copySelection, cutSelection, pasteInto } from "../editor/clipboard";
+ import "./library.css";
++import { t } from "../i18n";
+ 
+ interface Aim {
+   selected: boolean;
+@@ -57,21 +58,21 @@ export function EditorContextMenu({
+             disabled={!aim.selected || aim.readOnly}
+             onSelect={run((live) => void cutSelection(live))}
+           >
+-            cut
++            {t("cut")}
+           </ContextMenu.Item>
+           <ContextMenu.Item
+             className="menu-item"
+             disabled={!aim.selected}
+             onSelect={run((live) => void copySelection(live))}
+           >
+-            copy
++            {t("copy")}
+           </ContextMenu.Item>
+           <ContextMenu.Item
+             className="menu-item"
+             disabled={aim.readOnly}
+             onSelect={run((live) => void pasteInto(live))}
+           >
+-            paste
++            {t("paste")}
+           </ContextMenu.Item>
+           <ContextMenu.Separator className="menu-sep" />
+           <ContextMenu.Item
+@@ -81,7 +82,7 @@ export function EditorContextMenu({
+               live.focus();
+             })}
+           >
+-            select all
++            {t("select all")}
+           </ContextMenu.Item>
+         </ContextMenu.Content>
+       </ContextMenu.Portal>
+diff --git a/src/ui/Empty.tsx b/src/ui/Empty.tsx
+index 5e7abd0..8cd424f 100644
+--- a/src/ui/Empty.tsx
++++ b/src/ui/Empty.tsx
+@@ -1,6 +1,7 @@
+ import { openFile, openLibrary, openPaths } from "../app/commands";
+ import { basename, dirname } from "../app/paths";
+ import { useStore } from "../app/store";
++import { t } from "../i18n";
+ 
+ /**
+  * The session keeps twenty; twenty rows push `open a file` off the top of a
+@@ -15,17 +16,17 @@ export function Empty() {
+     <div className="empty">
+       <div className="empty-actions">
+         <button className="link" onClick={() => void openFile()}>
+-          open a file
++          {t("open a file")}
+         </button>
+         <span className="sep">·</span>
+         <button className="link" onClick={() => void openLibrary()}>
+-          open a library
++          {t("open a library")}
+         </button>
+       </div>
+ 
+       {recent.length > 0 && (
+         <div className="empty-recent">
+-          <div className="section-title">recent</div>
++          <div className="section-title">{t("recent")}</div>
+           {recent.slice(0, RECENT).map((path) => (
+             <button key={path} className="recent-item" onClick={() => void openPaths([path])}>
+               <span>{basename(path)}</span>
+diff --git a/src/ui/FileTree.tsx b/src/ui/FileTree.tsx
+index 1735c11..1a685a8 100644
+--- a/src/ui/FileTree.tsx
++++ b/src/ui/FileTree.tsx
+@@ -11,6 +11,7 @@ import { focusEditor } from "../editor";
+ import { askDelete, createFolder, newFile, renameEntry, suggestedName } from "../library/ops";
+ import { flatten, type Row } from "../library/tree";
+ import "./library.css";
++import { t } from "../i18n";
+ 
+ /** A row is either something on disk or the inline field making a new one. */
+ type Line = (Row & { draft?: false }) | { draft: true; depth: number };
+@@ -189,7 +190,7 @@ export function FileTree() {
+   if (!libraryPath) {
+     return (
+       <button className="tree-empty link" onClick={() => void openLibrary()}>
+-        open a library
++        {t("open a library")}
+       </button>
+     );
+   }
+@@ -197,13 +198,13 @@ export function FileTree() {
+   const rootMenu = (
+     <Menu>
+       <ContextMenu.Item className="menu-item" onSelect={() => void newFile(libraryPath)}>
+-        new file
++        {t("new file")}
+       </ContextMenu.Item>
+       <ContextMenu.Item className="menu-item" onSelect={() => startDraft(libraryPath)}>
+-        new folder
++        {t("new folder")}
+       </ContextMenu.Item>
+       <ContextMenu.Item className="menu-item" onSelect={() => void revealInExplorer(libraryPath)}>
+-        reveal in explorer
++        {t("reveal in explorer")}
+       </ContextMenu.Item>
+     </Menu>
+   );
+@@ -212,7 +213,7 @@ export function FileTree() {
+     <ContextMenu.Root>
+       <ContextMenu.Trigger asChild>
+         <div className="tree" ref={container} tabIndex={0} onKeyDown={onKeyDown}>
+-          {lines.length === 0 && <div className="tree-empty">no markdown files</div>}
++          {lines.length === 0 && <div className="tree-empty">{t("no markdown files")}</div>}
+ 
+           {lines.map((line, at) => {
+             if (line.draft) {
+@@ -271,7 +272,7 @@ export function FileTree() {
+                     // Only when it says more than the row already does.
+                     title={
+                       node.unreadable
+-                        ? `${node.rel} — can't be read`
++                        ? t(`${node.rel} — can't be read`)
+                         : node.rel === node.name
+                           ? undefined
+                           : node.rel
+@@ -297,40 +298,40 @@ export function FileTree() {
+                       className="menu-item"
+                       onSelect={() => void newFile(node.path)}
+                     >
+-                      new file
++                      {t("new file")}
+                     </ContextMenu.Item>
+                     <ContextMenu.Item className="menu-item" onSelect={() => startDraft(node.path)}>
+-                      new folder
++                      {t("new folder")}
+                     </ContextMenu.Item>
+                     <ContextMenu.Item
+                       className="menu-item"
+                       onSelect={() => void revealInExplorer(node.path)}
+                     >
+-                      reveal in explorer
++                      {t("reveal in explorer")}
+                     </ContextMenu.Item>
+                     <ContextMenu.Item className="menu-item" onSelect={() => askDelete(node)}>
+-                      delete
++                      {t("delete")}
+                     </ContextMenu.Item>
+                   </Menu>
+                 ) : (
+                   <Menu>
+                     <ContextMenu.Item className="menu-item" onSelect={() => void openPaths([node.path])}>
+-                      open
++                      {t("open")}
+                     </ContextMenu.Item>
+                     <ContextMenu.Item
+                       className="menu-item"
+                       onSelect={() => useStore.getState().setTreeRenaming(node.path)}
+                     >
+-                      rename
++                      {t("rename")}
+                     </ContextMenu.Item>
+                     <ContextMenu.Item
+                       className="menu-item"
+                       onSelect={() => void revealInExplorer(node.path)}
+                     >
+-                      reveal in explorer
++                      {t("reveal in explorer")}
+                     </ContextMenu.Item>
+                     <ContextMenu.Item className="menu-item" onSelect={() => askDelete(node)}>
+-                      delete
++                      {t("delete")}
+                     </ContextMenu.Item>
+                   </Menu>
+                 )}
+diff --git a/src/ui/FolderSearch.tsx b/src/ui/FolderSearch.tsx
+index b590b1b..fe617dc 100644
+--- a/src/ui/FolderSearch.tsx
++++ b/src/ui/FolderSearch.tsx
+@@ -19,6 +19,7 @@ import {
+ } from "../library/search";
+ import { OPEN_IN_EDIT } from "./QuickSearch";
+ import "./library.css";
++import { t, tc } from "../i18n";
+ 
+ /** `notes/ideas.md` -> `notes`; a file in the root has nothing to add. */
+ function folderOf(rel: string): string {
+@@ -144,7 +145,7 @@ export function FolderSearch() {
+   const lines = answer?.files.reduce((total, file) => total + file.matches.length, 0) ?? 0;
+ 
+   const note = (): string | null => {
+-    if (error) return error;
++    if (error) return t(error);
+     if (query.trim() === "") return null;
+     if (!answer) return null;
+     const parts = [
+@@ -161,17 +162,17 @@ export function FolderSearch() {
+     if (answer.skippedUnreadable > 0) {
+       parts.push(`${answer.skippedUnreadable} files could not be read`);
+     }
+-    return parts.join(" · ");
++    return parts.map((part) => t(part)).join(" · ");
+   };
+ 
+   return (
+     <div className="folder-search" ref={screen} onKeyDown={onKeyDown}>
+       <div className="screen-head">
+         <h1 className="folder-search-title">
+-          search in <span className="is-where">{basename(libraryPath ?? "")}</span>
++          {t("search in")} <span className="is-where">{basename(libraryPath ?? "")}</span>
+         </h1>
+         <button className="link" onClick={close}>
+-          close
++          {t("close")}
+         </button>
+       </div>
+ 
+@@ -181,20 +182,20 @@ export function FolderSearch() {
+           ref={input}
+           className="folder-search-input"
+           value={query}
+-          placeholder="find in files"
++          placeholder={t("find in files")}
+           spellCheck={false}
+           onChange={(event) => setQuery(event.target.value)}
+         />
+         <button
+           className={"glyph-toggle" + (caseSensitive ? " is-active" : "")}
+-          title="match case"
++          title={t("match case")}
+           onClick={() => setCaseSensitive((value) => !value)}
+         >
+           Aa
+         </button>
+         <button
+           className={"glyph-toggle" + (regex ? " is-active" : "")}
+-          title="regular expression"
++          title={t("regular expression")}
+           onClick={() => setRegex((value) => !value)}
+         >
+           .*
+@@ -230,9 +231,9 @@ export function FolderSearch() {
+ 
+       {found.length > 0 && (
+         <div className="folder-search-foot">
+-          <span>↑↓ move</span>
+-          <span>↵ open</span>
+-          <span>{OPEN_IN_EDIT} open in edit</span>
++          <span>↑↓ {t("move")}</span>
++          <span>↵ {tc("foot", "open")}</span>
++          <span>{OPEN_IN_EDIT} {t("open in edit")}</span>
+         </div>
+       )}
+     </div>
+diff --git a/src/ui/FormatBar.tsx b/src/ui/FormatBar.tsx
+index e7cae69..b62e9f3 100644
+--- a/src/ui/FormatBar.tsx
++++ b/src/ui/FormatBar.tsx
+@@ -23,6 +23,7 @@ import {
+ import { insertImageFromFile } from "../editor/images";
+ import { useStore } from "../app/store";
+ import "./formatbar.css";
++import { t, tc } from "../i18n";
+ 
+ interface Button {
+   label: string;
+@@ -76,13 +77,13 @@ export function FormatBar() {
+             (button.className ? ` ${button.className}` : "") +
+             (button.format && active.has(button.format) ? " is-active" : "")
+           }
+-          title={button.chord ? `${button.title} · ${chordText(button.chord)}` : button.title}
++          title={button.chord ? `${t(button.title)} · ${chordText(button.chord)}` : t(button.title)}
+           // The selection is the command's argument: taking the focus away
+           // first would leave nothing to format.
+           onMouseDown={(event) => event.preventDefault()}
+           onClick={button.run}
+         >
+-          {button.label}
++          {tc("btn", button.label)}
+         </button>
+       ))}
+     </div>
+diff --git a/src/ui/History.tsx b/src/ui/History.tsx
+index 60d8a13..dc14124 100644
+--- a/src/ui/History.tsx
++++ b/src/ui/History.tsx
+@@ -6,6 +6,7 @@ import { readFile } from "../app/fs";
+ import { activeDoc, useStore } from "../app/store";
+ import "./dialogs.css";
+ import { useScreenFocus } from "./screen";
++import { t, tc } from "../i18n";
+ 
+ const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+ 
+@@ -13,12 +14,12 @@ function when(at: number): string {
+   const date = new Date(at);
+   const hh = String(date.getHours()).padStart(2, "0");
+   const mm = String(date.getMinutes()).padStart(2, "0");
+-  return `${date.getDate()} ${MONTHS[date.getMonth()] ?? ""} ${date.getFullYear()} · ${hh}:${mm}`;
++  return `${date.getDate()} ${tc("month", MONTHS[date.getMonth()] ?? "")} ${date.getFullYear()} · ${hh}:${mm}`;
+ }
+ 
+ function size(bytes: number): string {
+-  if (bytes < 1024) return `${bytes} b`;
+-  return `${Math.round(bytes / 102.4) / 10} kb`;
++  if (bytes < 1024) return t(`${bytes} b`);
++  return t(`${Math.round(bytes / 102.4) / 10} kb`);
+ }
+ 
+ /** `file → version history…` (spec §2a): the snapshots of one document. */
+@@ -90,21 +91,22 @@ export function HistoryScreen({ id }: { id: string }) {
+     <div className="screen" tabIndex={0} ref={scroller}>
+       <div className="screen-column">
+         <div className="screen-head">
+-          <div className="screen-title">version history</div>
++          <div className="screen-title">{t("version history")}</div>
+           <button className="link" onClick={() => setHistory(null)}>
+-            close
++            {t("close")}
+           </button>
+         </div>
+         <div className="screen-lead">
+-          {doc.title} · kept for thirty days: one copy every five minutes of saving, and one
+-          before every change made outside plain. restoring only changes the buffer — the file
+-          is written when you save.
++          {doc.title} ·{" "}
++          {t(
++            "kept for thirty days: one copy every five minutes of saving, and one before every change made outside plain. restoring only changes the buffer — the file is written when you save.",
++          )}
+         </div>
+ 
+         {snapshots === null ? (
+-          <div className="screen-empty">reading…</div>
++          <div className="screen-empty">{t("reading…")}</div>
+         ) : snapshots.length === 0 ? (
+-          <div className="screen-empty">nothing saved from here yet</div>
++          <div className="screen-empty">{t("nothing saved from here yet")}</div>
+         ) : (
+           snapshots.map((snapshot) => (
+             <div className="screen-row" key={snapshot.path}>
+@@ -127,18 +129,18 @@ export function HistoryScreen({ id }: { id: string }) {
+                     )
+                   }
+                 >
+-                  restore
++                  {t("restore")}
+                 </button>
+                 <span className="sep">·</span>
+                 <button className="link" onClick={() => compare(snapshot)}>
+-                  compare
++                  {t("compare")}
+                 </button>
+                 <span className="sep">·</span>
+                 <button
+                   className="link"
+                   onClick={() => void openSnapshot(doc.title, snapshot).then(() => setHistory(null))}
+                 >
+-                  open
++                  {t("open")}
+                 </button>
+                 <span className="sep">·</span>
+                 <button
+@@ -154,7 +156,7 @@ export function HistoryScreen({ id }: { id: string }) {
+                     )
+                   }
+                 >
+-                  delete
++                  {t("delete")}
+                 </button>
+               </span>
+             </div>
+diff --git a/src/ui/Library.tsx b/src/ui/Library.tsx
+index 6a9659a..664ec19 100644
+--- a/src/ui/Library.tsx
++++ b/src/ui/Library.tsx
+@@ -19,6 +19,7 @@ import {
+ import { filesOf } from "../library/tags";
+ import "./library.css";
+ import { useFocusOnMount } from "./screen";
++import { months, t, tc } from "../i18n";
+ 
+ const SORTS: LibrarySort[] = ["modified", "name", "created"];
+ 
+@@ -108,7 +109,7 @@ export function Library() {
+     <div className="library" tabIndex={0} ref={scroller}>
+       <div className="library-head">
+         <h1 className="library-title">
+-          library <span className="is-where">{basename(libraryPath ?? "")}</span>
++          {t("library")} <span className="is-where">{basename(libraryPath ?? "")}</span>
+         </h1>
+         <div className="library-sorts">
+           {SORTS.map((option, at) => (
+@@ -118,16 +119,16 @@ export function Library() {
+                 className={option === sort ? "is-active" : "link"}
+                 onClick={() => useStore.getState().setLibrarySort(option)}
+               >
+-                {option}
++                {tc("sort", option)}
+               </button>
+             </Fragment>
+           ))}
+           <span className="sep">·</span>
+           <button className="library-new" onClick={() => newDoc()}>
+-            + new
++            + {t("new")}
+           </button>
+           <button className="link" onClick={() => useStore.getState().closeScreen()}>
+-            close
++            {t("close")}
+           </button>
+         </div>
+       </div>
+@@ -137,15 +138,15 @@ export function Library() {
+           <span className="library-tag">#{filterTag}</span>
+           {/* A tag in more files than Rust lists can only be filtered on in
+               part, and the screen says so rather than looking complete. */}
+-          {cut !== null && cut > 0 && <span className="library-more">+{cut} more</span>}
++          {cut !== null && cut > 0 && <span className="library-more">{t(`+${cut} more`)}</span>}
+           <button className="link" onClick={() => useStore.getState().toggleLibraryFilter(null)}>
+-            show all
++            {t("show all")}
+           </button>
+         </div>
+       )}
+ 
+       <div className="library-list">
+-        {list.length === 0 && <div className="library-empty">no files</div>}
++        {list.length === 0 && <div className="library-empty">{t("no files")}</div>}
+         {list.map((row) => {
+           const known = countedWords(row.path, row.mtimeMs);
+           return (
+@@ -159,20 +160,20 @@ export function Library() {
+               <span className="library-name">
+                 <span className="library-file">
+                   {row.name}
+-                  {dirty.has(pathKey(row.path)) && <span className="library-edited">edited</span>}
++                  {dirty.has(pathKey(row.path)) && <span className="library-edited">{t("edited")}</span>}
+                 </span>
+                 {row.folder && <span className="library-where">{row.folder}</span>}
+               </span>
+-              <span className="library-date">{formatDate(row.mtimeMs)}</span>
+-              <span className="library-words">{known === null ? "" : formatWords(known)}</span>
++              <span className="library-date">{months(formatDate(row.mtimeMs))}</span>
++              <span className="library-words">{known === null ? "" : t(formatWords(known))}</span>
+             </button>
+           );
+         })}
+       </div>
+ 
+       <div className="library-foot">
+-        {list.length === 1 ? "1 file" : `${list.length} files`}
+-        {words > 0 && ` · ${words.toLocaleString("en-US")} words`}
++        {t(list.length === 1 ? "1 file" : `${list.length} files`)}
++        {words > 0 && ` · ${t(`${words.toLocaleString("en-US")} words`)}`}
+       </div>
+     </div>
+   );
+diff --git a/src/ui/MenuBar.tsx b/src/ui/MenuBar.tsx
+index 0477284..55519cc 100644
+--- a/src/ui/MenuBar.tsx
++++ b/src/ui/MenuBar.tsx
+@@ -8,6 +8,7 @@ import { menuModel, type MenuNode } from "../app/menu";
+ import { activeDoc, useStore } from "../app/store";
+ import { onLineNumbers } from "../editor/setup";
+ import "./menubar.css";
++import { tc } from "../i18n";
+ 
+ function Row({ node }: { node: MenuNode }) {
+   if (node.kind === "separator") {
+@@ -19,7 +20,7 @@ function Row({ node }: { node: MenuNode }) {
+       <Menubar.Sub>
+         <Menubar.SubTrigger className="mb-item" disabled={node.disabled}>
+           <span className="mb-check" />
+-          <span className="mb-label">{node.label}</span>
++          <span className="mb-label">{tc("menu", node.label)}</span>
+           <span className="mb-arrow">▸</span>
+         </Menubar.SubTrigger>
+         <Menubar.Portal>
+@@ -36,7 +37,7 @@ function Row({ node }: { node: MenuNode }) {
+   return (
+     <Menubar.Item className="mb-item" disabled={node.disabled} onSelect={() => node.run()}>
+       <span className="mb-check">{node.checked ? "●" : ""}</span>
+-      <span className="mb-label">{node.label}</span>
++      <span className="mb-label">{tc("menu", node.label)}</span>
+       {node.chord && <span className="mb-chord">{node.chord}</span>}
+     </Menubar.Item>
+   );
+@@ -65,7 +66,7 @@ export function MenuBar() {
+     <Menubar.Root className="menubar">
+       {sections.map((section) => (
+         <Menubar.Menu key={section.key}>
+-          <Menubar.Trigger className="mb-trigger">{section.label}</Menubar.Trigger>
++          <Menubar.Trigger className="mb-trigger">{tc("menu", section.label)}</Menubar.Trigger>
+           <Menubar.Portal>
+             <Menubar.Content className="mb-content" align="start" sideOffset={0}>
+               {section.items.map((node) => (
+diff --git a/src/ui/Modal.tsx b/src/ui/Modal.tsx
+index 7f9a74a..789c55a 100644
+--- a/src/ui/Modal.tsx
++++ b/src/ui/Modal.tsx
+@@ -1,6 +1,7 @@
+ import { Fragment, useEffect, useRef } from "react";
+ import { useStore } from "../app/store";
+ import "./dialogs.css";
++import { t } from "../i18n";
+ 
+ /** The app's only dialog: 420px, text actions, `Esc` cancels (spec §4). */
+ export function Modal() {
+@@ -63,7 +64,7 @@ export function Modal() {
+         ref={box}
+         onMouseDown={(e) => e.stopPropagation()}
+       >
+-        <div className="modal-title">{dialog.title}</div>
++        <div className="modal-title">{t(dialog.title)}</div>
+         {dialog.lines && dialog.lines.length > 0 && (
+           <div className="modal-lines">
+             {dialog.lines.map((line) => (
+@@ -72,7 +73,7 @@ export function Modal() {
+                 key={line}
+                 title={line}
+               >
+-                {line}
++                {t(line)}
+               </div>
+             ))}
+           </div>
+@@ -82,7 +83,7 @@ export function Modal() {
+             <Fragment key={action.label}>
+               {index > 0 && <span className="sep">·</span>}
+               <button className="link" onClick={action.run}>
+-                {action.label}
++                {t(action.label)}
+               </button>
+             </Fragment>
+           ))}
+diff --git a/src/ui/ModeBar.tsx b/src/ui/ModeBar.tsx
+index dcabb56..ea05709 100644
+--- a/src/ui/ModeBar.tsx
++++ b/src/ui/ModeBar.tsx
+@@ -1,5 +1,6 @@
+ import { crumbParts } from "../app/paths";
+ import { activeDoc, useStore, type Mode } from "../app/store";
++import { t } from "../i18n";
+ 
+ const MODES: Mode[] = ["read", "edit", "rich"];
+ 
+@@ -16,13 +17,15 @@ export function ModeBar() {
+   const idle = !doc && !screen;
+ 
+   const crumbs = crumbParts(libraryPath, doc);
++  // Fork: a document that was never saved is «Без названия», not `Untitled`.
++  const shown = (part: string) => (doc && !doc.path && part === doc.title ? t(part) : part);
+ 
+   return (
+     <div className="modebar">
+       <div className="modebar-left">
+         {railCollapsed && (
+           <button className="rail-peek" onClick={toggleRail}>
+-            ▸ files
++            ▸ {t("files")}
+           </button>
+         )}
+         {crumbs && (
+@@ -33,7 +36,7 @@ export function ModeBar() {
+                 goes with them rather than being left hanging. */}
+             <span className="crumb-lead">
+               <span className="crumb crumb-root" title={crumbs.root}>
+-                {crumbs.root}
++                {shown(crumbs.root)}
+               </span>
+               {crumbs.middle.length > 0 && (
+                 <>
+@@ -47,7 +50,7 @@ export function ModeBar() {
+             </span>
+             {crumbs.leaf !== null && (
+               <span className="crumb crumb-leaf" title={crumbs.leaf}>
+-                {crumbs.leaf}
++                {shown(crumbs.leaf)}
+               </span>
+             )}
+             {doc?.dirty && <span className="dot">•</span>}
+@@ -63,7 +66,7 @@ export function ModeBar() {
+             disabled={idle}
+             onClick={() => setMode(mode)}
+           >
+-            {mode}
++            {t(mode)}
+           </button>
+         ))}
+         {/* Split is the two of them at once, so it stands a little apart. */}
+@@ -72,7 +75,7 @@ export function ModeBar() {
+           disabled={idle}
+           onClick={() => setMode("split")}
+         >
+-          split
++          {t("split")}
+         </button>
+       </div>
+     </div>
+diff --git a/src/ui/Outline.tsx b/src/ui/Outline.tsx
+index 5844394..3a827bc 100644
+--- a/src/ui/Outline.tsx
++++ b/src/ui/Outline.tsx
+@@ -1,6 +1,7 @@
+ import { emitGotoHeading, emitGotoLine } from "../read/events";
+ import { useActiveHeading } from "../read/outline";
+ import type { Doc } from "../app/store";
++import { t } from "../i18n";
+ 
+ /**
+  * Headings of the open document, without their `#`, 18px per level
+@@ -11,7 +12,7 @@ export function Outline({ doc }: { doc: Doc | null }) {
+   const active = useActiveHeading();
+ 
+   if (!doc || doc.headings.length === 0) {
+-    return <div className="rail-empty">no headings</div>;
++    return <div className="rail-empty">{t("no headings")}</div>;
+   }
+ 
+   return (
+diff --git a/src/ui/QuickSearch.tsx b/src/ui/QuickSearch.tsx
+index 575df4c..dce23c0 100644
+--- a/src/ui/QuickSearch.tsx
++++ b/src/ui/QuickSearch.tsx
+@@ -13,6 +13,7 @@ import { useStore } from "../app/store";
+ import { pieces, rank } from "../library/fuzzy";
+ import { files } from "../library/tree";
+ import "./library.css";
++import { t, tc } from "../i18n";
+ 
+ const RECENT = 8;
+ 
+@@ -50,10 +51,16 @@ function folderOf(rel: string): string {
+ function commandEntries(query: string, close: () => void): Entry[] {
+   const needle = query.trim().toLowerCase();
+   return availableCommands()
+-    .filter((command) => command.title.toLowerCase().includes(needle))
++    // Fork: the palette finds a command by its translated title and by the
++    // English one, so muscle memory from the original keeps working.
++    .filter(
++      (command) =>
++        command.title.toLowerCase().includes(needle) ||
++        t(command.title).toLowerCase().includes(needle),
++    )
+     .map((command: AppCommand) => ({
+       key: `action:${command.id}`,
+-      label: plain(command.title),
++      label: plain(t(command.title)),
+       where: command.chord ?? command.hint ? chordText((command.chord ?? command.hint) as string) : "",
+       chord: true,
+       run: () => {
+@@ -157,7 +164,7 @@ export function QuickSearch() {
+     <Command
+       className="qs"
+       ref={modal}
+-      label="quick search"
++      label={t("quick search")}
+       shouldFilter={false}
+       loop
+       onKeyDown={(event) => {
+@@ -187,19 +194,19 @@ export function QuickSearch() {
+           className="qs-input"
+           value={query}
+           onValueChange={setQuery}
+-          placeholder="search files, or > for commands"
++          placeholder={t("search files, or > for commands")}
+           autoFocus
+         />
+-        <span className="qs-esc">esc</span>
++        <span className="qs-esc">{t("esc")}</span>
+       </div>
+ 
+       <Command.List className="qs-list">
+-        {empty && <Command.Empty className="qs-empty">nothing found</Command.Empty>}
++        {empty && <Command.Empty className="qs-empty">{t("nothing found")}</Command.Empty>}
+         {sections.map((section) =>
+           section.entries.length === 0 ? null : (
+             <Command.Group
+               key={section.title}
+-              heading={<span className="qs-section">{section.title}</span>}
++              heading={<span className="qs-section">{t(section.title)}</span>}
+             >
+               {section.entries.map((entry) => (
+                 <Command.Item
+@@ -232,9 +239,9 @@ export function QuickSearch() {
+       </Command.List>
+ 
+       <div className="qs-footer">
+-        <span>↑↓ move</span>
+-        <span>↵ open</span>
+-        <span>{OPEN_IN_EDIT} open in edit</span>
++        <span>↑↓ {t("move")}</span>
++        <span>↵ {tc("foot", "open")}</span>
++        <span>{OPEN_IN_EDIT} {t("open in edit")}</span>
+       </div>
+     </Command>
+   );
+diff --git a/src/ui/Rail.tsx b/src/ui/Rail.tsx
+index 2f7c3c3..838a23f 100644
+--- a/src/ui/Rail.tsx
++++ b/src/ui/Rail.tsx
+@@ -6,6 +6,8 @@ import { FileTree } from "./FileTree";
+ import { Outline } from "./Outline";
+ import "./rail.css";
+ import "./library.css";
++import { t, tc } from "../i18n";
++import { chordText } from "../app/chords";
+ 
+ /** `tags` under the tree (mockup 1e): the tag, how many files, click filters. */
+ function Tags() {
+@@ -17,12 +19,12 @@ function Tags() {
+ 
+   return (
+     <section className="rail-section rail-side">
+-      <div className="section-title rail-heading">tags</div>
++      <div className="section-title rail-heading">{t("tags")}</div>
+       {tags.map((entry) => (
+         <button
+           key={entry.tag}
+           className={"rail-tag" + (entry.tag === filter ? " is-active" : "")}
+-          title={`${entry.count} ${entry.count === 1 ? "file" : "files"}`}
++          title={t(`${entry.count} ${entry.count === 1 ? "file" : "files"}`)}
+           onClick={() => useStore.getState().toggleLibraryFilter(entry.tag)}
+         >
+           <span className="rail-tag-name">#{entry.tag}</span>
+@@ -46,9 +48,9 @@ function Backlinks() {
+ 
+   return (
+     <section className="rail-section rail-side">
+-      <div className="section-title rail-heading">links here</div>
++      <div className="section-title rail-heading">{t("links here")}</div>
+       {backlinks.length === 0 ? (
+-        <div className="rail-empty">nothing links here</div>
++        <div className="rail-empty">{t("nothing links here")}</div>
+       ) : (
+         backlinks.map((link) => (
+           <button
+@@ -79,14 +81,14 @@ export function Rail() {
+   return (
+     <aside className="rail">
+       <button className="rail-search" onClick={() => openQuickSearch()}>
+-        <span>⌕ search</span>
+-        <span className="rail-hint">ctrl k</span>
++        <span>⌕ {t("search")}</span>
++        <span className="rail-hint">{chordText("Ctrl+K")}</span>
+       </button>
+ 
+       <section className="rail-section rail-open">
+-        <div className="section-title rail-heading">open</div>
++        <div className="section-title rail-heading">{tc("rail", "open")}</div>
+         {docs.length === 0 ? (
+-          <div className="rail-empty">nothing open</div>
++          <div className="rail-empty">{t("nothing open")}</div>
+         ) : (
+           docs.map((doc) => (
+             // A row, not a button: the close control is a button of its own
+@@ -100,14 +102,14 @@ export function Rail() {
+               }}
+             >
+               <button className="rail-item-name" onClick={() => activate(doc.id)}>
+-                {doc.title}
++                {doc.path ? doc.title : t(doc.title)}
+               </button>
+               {doc.dirty && <span className="dot rail-dot">●</span>}
+               {/* Takes the dot's place while the pointer is on the row, so
+                   the two never fight for the same corner (audit #9). */}
+               <button
+                 className="rail-close"
+-                title="close"
++                title={t("close")}
+                 onClick={() => closeDocs([doc.id])}
+               >
+                 ×
+@@ -121,7 +123,7 @@ export function Rail() {
+         {/* Folder headings label the tree themselves (mockup 1a); the
+             outline has nothing else to say what it is. */}
+         {(railView === "outline" || !libraryPath) && (
+-          <div className="section-title rail-heading">{railView}</div>
++          <div className="section-title rail-heading">{t(railView)}</div>
+         )}
+         {railView === "files" ? <FileTree /> : <Outline doc={doc} />}
+       </section>
+@@ -131,7 +133,7 @@ export function Rail() {
+       <footer className="rail-footer">
+         {libraryPath && (
+           <>
+-            <div>{treeFiles === 1 ? "1 file" : `${treeFiles} files`}</div>
++            <div>{t(treeFiles === 1 ? "1 file" : `${treeFiles} files`)}</div>
+             <div className="rail-path" title={libraryPath}>
+               {libraryPath}
+             </div>
+@@ -142,19 +144,19 @@ export function Rail() {
+             className={railView === "files" ? "is-active" : "link"}
+             onClick={() => setRailView("files")}
+           >
+-            files
++            {t("files")}
+           </button>
+           <span className="sep">·</span>
+           <button
+             className={railView === "outline" ? "is-active" : "link"}
+             onClick={() => setRailView("outline")}
+           >
+-            outline
++            {t("outline")}
+           </button>
+           {/* The mouse's way to what `Ctrl+\` does (spec §4). */}
+           <button
+             className="rail-collapse"
+-            title="collapse the rail"
++            title={t("collapse the rail")}
+             onClick={() => useStore.getState().toggleRail()}
+           >
+             ◂
+diff --git a/src/ui/ReadContextMenu.tsx b/src/ui/ReadContextMenu.tsx
+index f6ef1d7..b50ead2 100644
+--- a/src/ui/ReadContextMenu.tsx
++++ b/src/ui/ReadContextMenu.tsx
+@@ -12,6 +12,7 @@ import { copyPlainText } from "../app/commands";
+ import { copyText } from "../app/platform";
+ import { useStore } from "../app/store";
+ import "./library.css";
++import { t } from "../i18n";
+ 
+ async function toClipboard(text: string, said: string): Promise<void> {
+   const store = useStore.getState();
+@@ -71,20 +72,20 @@ export function ReadContextMenu({
+       <ContextMenu.Portal>
+         <ContextMenu.Content className="menu" collisionPadding={8}>
+           <ContextMenu.Item className="menu-item" onSelect={copySelection}>
+-            copy
++            {t("copy")}
+           </ContextMenu.Item>
+           <ContextMenu.Item className="menu-item" onSelect={() => void copyPlainText()}>
+-            copy as plain text
++            {t("copy as plain text")}
+           </ContextMenu.Item>
+           <ContextMenu.Item className="menu-item" onSelect={selectAll}>
+-            select all
++            {t("select all")}
+           </ContextMenu.Item>
+ 
+           {link && (
+             <>
+               <ContextMenu.Separator className="menu-sep" />
+               <ContextMenu.Item className="menu-item" onSelect={() => onOpenLink(link)}>
+-                open link
++                {t("open link")}
+               </ContextMenu.Item>
+               <ContextMenu.Item
+                 className="menu-item"
+@@ -96,7 +97,7 @@ export function ReadContextMenu({
+                   )
+                 }
+               >
+-                copy link
++                {t("copy link")}
+               </ContextMenu.Item>
+             </>
+           )}
+@@ -105,13 +106,13 @@ export function ReadContextMenu({
+             <>
+               <ContextMenu.Separator className="menu-sep" />
+               <ContextMenu.Item className="menu-item" onSelect={() => onOpenImage(image)}>
+-                open image
++                {t("open image")}
+               </ContextMenu.Item>
+               <ContextMenu.Item
+                 className="menu-item"
+                 onSelect={() => void toClipboard(image.dataset["path"] ?? "", "path copied")}
+               >
+-                copy path
++                {t("copy path")}
+               </ContextMenu.Item>
+             </>
+           )}
+diff --git a/src/ui/Recovery.tsx b/src/ui/Recovery.tsx
+index 76c2ff2..615b9ab 100644
+--- a/src/ui/Recovery.tsx
++++ b/src/ui/Recovery.tsx
+@@ -5,6 +5,7 @@ import { showConflict } from "../app/save";
+ import { useStore, type Recovery as Entry } from "../app/store";
+ import "./dialogs.css";
+ import { useScreenFocus } from "./screen";
++import { t } from "../i18n";
+ 
+ function ago(at: number): string {
+   const minutes = Math.max(0, Math.round((Date.now() - at) / 60000));
+@@ -86,26 +87,27 @@ export function RecoveryScreen({ entries }: { entries: Entry[] }) {
+   return (
+     <div className="screen" tabIndex={0} ref={scroller}>
+       <div className="screen-column">
+-        <div className="screen-title">unsaved work found</div>
++        <div className="screen-title">{t("unsaved work found")}</div>
+         <div className="screen-lead">
+-          plain was closed with edits that never reached the disk. discarded drafts go to the
+-          recycle bin.
++          {t(
++            "plain was closed with edits that never reached the disk. discarded drafts go to the recycle bin.",
++          )}
+         </div>
+ 
+         {entries.map((entry) => (
+           <div className="screen-row" key={entry.file}>
+             <span className="screen-name">{entry.title}</span>
+-            <span className="screen-where" title={entry.path ?? "never saved"}>
+-              {entry.path ? dirname(entry.path) : "never saved"}
++            <span className="screen-where" title={entry.path ?? t("never saved")}>
++              {entry.path ? dirname(entry.path) : t("never saved")}
+             </span>
+-            <span className="screen-when">{ago(entry.savedAt)}</span>
++            <span className="screen-when">{t(ago(entry.savedAt))}</span>
+             <span className="screen-row-actions">
+               <button className="link" onClick={() => void restore(entry)}>
+-                restore
++                {t("restore")}
+               </button>
+               <span className="sep">·</span>
+               <button className="link" onClick={() => discard(entry)}>
+-                discard
++                {t("discard")}
+               </button>
+             </span>
+           </div>
+@@ -124,11 +126,11 @@ export function RecoveryScreen({ entries }: { entries: Entry[] }) {
+               })();
+             }}
+           >
+-            restore all
++            {t("restore all")}
+           </button>
+           <span className="sep">·</span>
+           <button className="link" onClick={discardAll}>
+-            discard all
++            {t("discard all")}
+           </button>
+           <span className="sep">·</span>
+           {/* Neither restore nor discard. They are moved aside first: under
+@@ -143,7 +145,7 @@ export function RecoveryScreen({ entries }: { entries: Entry[] }) {
+               })();
+             }}
+           >
+-            later
++            {t("later")}
+           </button>
+         </div>
+       </div>
+diff --git a/src/ui/Resizer.tsx b/src/ui/Resizer.tsx
+index 7382873..b862d5e 100644
+--- a/src/ui/Resizer.tsx
++++ b/src/ui/Resizer.tsx
+@@ -13,6 +13,7 @@ import { CONTENT_WIDTH } from "../app/settings";
+ import { applyAppearance } from "../app/theme";
+ import { RAIL_WIDTH, useStore } from "../app/store";
+ import "./resizer.css";
++import { t } from "../i18n";
+ 
+ interface Edge {
+   /** The value the drag starts from, read once when the pointer goes down. */
+@@ -98,7 +99,7 @@ export function RailResizer() {
+       onDoubleClick={() => useStore.getState().setRailWidth(RAIL_WIDTH.default)}
+       role="separator"
+       aria-orientation="vertical"
+-      aria-label="rail width"
++      aria-label={t("rail width")}
+     />
+   );
+ }
+@@ -146,7 +147,7 @@ export function ColumnEdge({ side }: { side: "left" | "right" }) {
+       onDoubleClick={() => setContentWidth(DEFAULT_CONTENT)}
+       role="separator"
+       aria-orientation="vertical"
+-      aria-label="column width"
++      aria-label={t("column width")}
+     />
+   );
+ }
+diff --git a/src/ui/Settings.tsx b/src/ui/Settings.tsx
+index ff52999..cd6f55e 100644
+--- a/src/ui/Settings.tsx
++++ b/src/ui/Settings.tsx
+@@ -5,6 +5,8 @@
+ import { Fragment, useEffect, useState, type ReactNode } from "react";
+ import { openSettingsFile } from "../app/commands";
+ import { AUTOSAVE, CONTENT_WIDTH, DEFAULTS, defaultEol, type Settings } from "../app/settings";
++import { isCustomFamily, TEXT_PRESETS, UI_SIZE } from "../app/fonts";
++import { setLanguage, t, tc, type Language } from "../i18n";
+ import { useStore } from "../app/store";
+ import { TREE_CHANGED } from "../app/watcher";
+ import { syncLineNumbers } from "../editor/setup";
+@@ -37,8 +39,11 @@ function Row({
+   return (
+     <div className="setting">
+       <div className="setting-key">
+-        <span className="setting-name">{name}</span>
+-        <span className="setting-about">{about}</span>
++        {/* Fork: the key stays in the tooltip; the row says what it is. */}
++        <span className="setting-name" title={name}>
++          {t(name)}
++        </span>
++        <span className="setting-about">{t(about)}</span>
+       </div>
+       <div className="setting-control">{children}</div>
+     </div>
+@@ -64,7 +69,7 @@ function Choice<T extends string | number | boolean>({
+             className={option.value === value ? "choice-option is-on" : "choice-option"}
+             onClick={() => onPick(option.value)}
+           >
+-            {option.label}
++            {tc("choice", option.label)}
+           </button>
+         </Fragment>
+       ))}
+@@ -85,11 +90,11 @@ function Stepper({
+     onChange(clamp(value + direction * bounds.step, bounds.min, bounds.max));
+   return (
+     <span className="number">
+-      <button className="number-step" onClick={() => step(-1)} title="less">
++      <button className="number-step" onClick={() => step(-1)} title={t("less")}>
+         −
+       </button>
+       <span className="number-value">{short(value)}</span>
+-      <button className="number-step" onClick={() => step(1)} title="more">
++      <button className="number-step" onClick={() => step(1)} title={t("more")}>
+         +
+       </button>
+     </span>
+@@ -110,6 +115,10 @@ export function SettingsScreen() {
+   // The extensions field is free text while it is being typed; the settings
+   // only hear about it once the field is left or Enter is pressed.
+   const [extensions, setExtensions] = useState(settings.library.extensions.join(", "));
++  // Fork: an installed font family, typed by hand; empty means a preset.
++  const customFont = isCustomFamily(settings.appearance.textFont) ? settings.appearance.textFont : "";
++  const [family, setFamily] = useState(customFont);
++  useEffect(() => setFamily(customFont), [customFont]);
+   useEffect(() => setExtensions(settings.library.extensions.join(", ")), [settings.library.extensions]);
+ 
+   useEffect(() => {
+@@ -126,6 +135,22 @@ export function SettingsScreen() {
+   }, []);
+ 
+   const patch = (next: Settings) => change(next);
++  const appearance = (part: Partial<Settings["appearance"]>) =>
++    patch({ ...settings, appearance: { ...settings.appearance, ...part } });
++
++  const commitFamily = () => {
++    const name = family.trim().replace(/\s+/g, " ");
++    if (name === "") {
++      if (customFont) appearance({ textFont: DEFAULTS.appearance.textFont });
++      return;
++    }
++    if (!isCustomFamily(name)) {
++      setFamily(customFont);
++      useStore.getState().setMessage("only letters, digits, spaces, dots and hyphens");
++      return;
++    }
++    if (name !== settings.appearance.textFont) appearance({ textFont: name });
++  };
+ 
+   const commitExtensions = () => {
+     const list = extensions
+@@ -165,12 +190,26 @@ export function SettingsScreen() {
+     <div className="screen" tabIndex={0} ref={scroller}>
+       <div className="screen-column settings-column">
+         <div className="settings-head">
+-          <h1 className="screen-title">settings</h1>
++          <h1 className="screen-title">{t("settings")}</h1>
+           <button className="link" onClick={close}>
+-            close
++            {t("close")}
+           </button>
+         </div>
+ 
++        <Row name="appearance.language" about="menus and dialogs; everything follows after a restart">
++          <Choice
++            value={settings.appearance.language}
++            options={[
++              { label: "русский", value: "ru" as Language },
++              { label: "english", value: "en" as Language },
++            ]}
++            onPick={(language) => {
++              setLanguage(language);
++              appearance({ language });
++            }}
++          />
++        </Row>
++
+         <Row name="appearance.theme" about="system follows windows until you pick one">
+           <Choice
+             value={settings.appearance.theme}
+@@ -183,6 +222,55 @@ export function SettingsScreen() {
+           />
+         </Row>
+ 
++        <Row name="appearance.uiSize" about="menus, sidebar and status bar, in pixels">
++          <Stepper
++            value={settings.appearance.uiSize}
++            bounds={UI_SIZE}
++            onChange={(uiSize) => appearance({ uiSize })}
++          />
++        </Row>
++
++        <Row name="appearance.uiFont" about="the font of menus, sidebar and dialogs">
++          <Choice
++            value={settings.appearance.uiFont}
++            options={[
++              { label: "system", value: "system" as const },
++              { label: "mono", value: "mono" as const },
++            ]}
++            onPick={(uiFont) => appearance({ uiFont })}
++          />
++        </Row>
++
++        <Row name="appearance.textFont" about="read and rich; or the name of a font installed on this computer">
++          <Choice
++            value={customFont ? "" : settings.appearance.textFont}
++            options={TEXT_PRESETS.map((preset) => ({ label: preset, value: preset as string }))}
++            onPick={(textFont) => appearance({ textFont })}
++          />
++          <input
++            className="setting-field setting-font"
++            value={family}
++            placeholder={t("e.g. PT Serif")}
++            spellCheck={false}
++            onChange={(event) => setFamily(event.target.value)}
++            onBlur={commitFamily}
++            onKeyDown={(event) => {
++              if (event.key === "Enter") event.currentTarget.blur();
++            }}
++          />
++        </Row>
++
++        <Row name="appearance.editFont" about="the markdown source in edit">
++          <Choice
++            value={settings.appearance.editFont}
++            options={[
++              { label: "mono", value: "mono" as const },
++              { label: "text", value: "text" as const },
++            ]}
++            onPick={(editFont) => appearance({ editFont })}
++          />
++        </Row>
++
+         <Row name="appearance.fontSize" about="the text of the document, in pixels">
+           <Stepper
+             value={settings.appearance.fontSize}
+@@ -245,7 +333,7 @@ export function SettingsScreen() {
+           />
+         </Row>
+ 
+-        <Row name="files.newFileEol" about={`line endings for files plain creates; ${defaultEol()} here`}>
++        <Row name="files.newFileEol" about={t(`line endings for files plain creates; ${defaultEol()} here`)}>
+           <Choice
+             value={settings.files.newFileEol}
+             options={[
+@@ -293,11 +381,11 @@ export function SettingsScreen() {
+               void openSettingsFile();
+             }}
+           >
+-            open settings.json
++            {t("open settings.json")}
+           </button>
+           <span className="sep">·</span>
+           <button className="link" onClick={restoreDefaults}>
+-            defaults
++            {t("defaults")}
+           </button>
+         </div>
+       </div>
+diff --git a/src/ui/Shortcuts.tsx b/src/ui/Shortcuts.tsx
+index c2762b6..a0ae543 100644
+--- a/src/ui/Shortcuts.tsx
++++ b/src/ui/Shortcuts.tsx
+@@ -9,6 +9,7 @@ import { useStore } from "../app/store";
+ import "./dialogs.css";
+ import "./settings.css";
+ import { useScreenFocus } from "./screen";
++import { t, tc } from "../i18n";
+ 
+ type Group =
+   | "files"
+@@ -129,9 +130,9 @@ export function ShortcutsScreen() {
+     <div className="screen" tabIndex={0} ref={scroller}>
+       <div className="screen-column settings-column">
+         <div className="settings-head">
+-          <h1 className="screen-title">shortcuts</h1>
++          <h1 className="screen-title">{t("shortcuts")}</h1>
+           <button className="link" onClick={close}>
+-            close
++            {t("close")}
+           </button>
+         </div>
+ 
+@@ -140,10 +141,10 @@ export function ShortcutsScreen() {
+           if (list.length === 0) return null;
+           return (
+             <Fragment key={group}>
+-              <div className="keys-group section-title">{group}</div>
++              <div className="keys-group section-title">{tc("keys", group)}</div>
+               {list.map((row) => (
+                 <div className="keys-row" key={row.key}>
+-                  <span className="keys-what">{row.label}</span>
++                  <span className="keys-what">{t(row.label)}</span>
+                   <span className="keys-chord">{row.keys}</span>
+                 </div>
+               ))}
+@@ -151,7 +152,7 @@ export function ShortcutsScreen() {
+           );
+         })}
+ 
+-        <div className="keys-note">shortcuts work in any keyboard layout</div>
++        <div className="keys-note">{t("shortcuts work in any keyboard layout")}</div>
+       </div>
+     </div>
+   );
+diff --git a/src/ui/StatusBar.tsx b/src/ui/StatusBar.tsx
+index 021dfaf..dc2de00 100644
+--- a/src/ui/StatusBar.tsx
++++ b/src/ui/StatusBar.tsx
+@@ -5,6 +5,7 @@ import { countWords } from "../read/words";
+ import { idle } from "../app/platform";
+ import { activeDoc, useStore, type Doc } from "../app/store";
+ import "./dialogs.css";
++import { t } from "../i18n";
+ 
+ /** Spec §4, in the order the spec lists them. */
+ function state(doc: Doc): string {
+@@ -48,7 +49,7 @@ export function StatusBar() {
+     doc && doc.mode !== "read" && doc.caret
+       ? `ln ${doc.caret.line}, col ${doc.caret.col}`
+       : null;
+-  const left = message ?? caret;
++  const left = t(message) ?? (caret && t(caret));
+ 
+   // Wave 3 changes the text on every keystroke, so keep this off that path.
+   const text = doc?.text ?? "";
+@@ -92,7 +93,7 @@ export function StatusBar() {
+           <span className="status-encoding">
+             <button
+               className="link"
+-              title="reopen as…"
++              title={t("reopen as…")}
+               onMouseDown={(event) => {
+                 event.stopPropagation();
+                 setMenu((open) => !open);
+@@ -102,7 +103,7 @@ export function StatusBar() {
+             </button>
+             {menu && (
+               <span className="encoding-menu" onMouseDown={(event) => event.stopPropagation()}>
+-                <span className="sep">reopen as…</span>
++                <span className="sep">{t("reopen as…")}</span>
+                 {REOPEN.map((label, index) => (
+                   <Fragment key={label}>
+                     {index > 0 && <span className="sep">·</span>}
+@@ -122,11 +123,11 @@ export function StatusBar() {
+           </span>
+         )}
+         {doc && words !== null && (
+-          <span className="status-words">{words.toLocaleString("en-US")} words</span>
++          <span className="status-words">{t(`${words.toLocaleString("en-US")} words`)}</span>
+         )}
+-        {doc && <span>{note ?? state(doc)}</span>}
+-        <button className="link theme-toggle" title="switch theme" onClick={toggleTheme}>
+-          {resolvedTheme === "dark" ? "◑ dark" : "◐ light"}
++        {doc && <span>{t(note ?? state(doc))}</span>}
++        <button className="link theme-toggle" title={t("switch theme")} onClick={toggleTheme}>
++          {resolvedTheme === "dark" ? `◑ ${t("dark")}` : `◐ ${t("light")}`}
+         </button>
+       </span>
+     </div>
+diff --git a/src/ui/app.css b/src/ui/app.css
+index 36417d6..a9f3974 100644
+--- a/src/ui/app.css
++++ b/src/ui/app.css
+@@ -227,7 +227,7 @@
+   padding: 7px 0;
+   border-top: 1px solid var(--border);
+   color: var(--muted);
+-  font-size: 12.5px;
++  font-size: calc(12.5px * var(--ui-scale));
+ }
+ 
+ .recent-item:hover {
+@@ -384,7 +384,7 @@
+   bottom: 10px;
+   /* Under the scrim: while a dialog is up it is the only thing to answer. */
+   z-index: 15;
+-  font-size: 10.5px;
++  font-size: calc(10.5px * var(--ui-scale));
+   color: var(--muted);
+   cursor: pointer;
+ }
+diff --git a/src/ui/base.css b/src/ui/base.css
+index 8b36da5..baa9070 100644
+--- a/src/ui/base.css
++++ b/src/ui/base.css
+@@ -16,7 +16,7 @@ body {
+   margin: 0;
+   background: var(--bg);
+   color: var(--fg);
+-  font-family: var(--font);
++  font-family: var(--font-ui);
+   font-size: var(--fs-ui);
+   font-weight: 400;
+   -webkit-font-smoothing: antialiased;
+diff --git a/src/ui/dialogs.css b/src/ui/dialogs.css
+index 6622257..15d83aa 100644
+--- a/src/ui/dialogs.css
++++ b/src/ui/dialogs.css
+@@ -26,7 +26,7 @@
+ }
+ 
+ .modal-title {
+-  font-size: 15px;
++  font-size: calc(15px * var(--ui-scale));
+   font-weight: 600;
+   color: var(--fg);
+ }
+@@ -103,7 +103,7 @@
+ }
+ 
+ .screen-title {
+-  font-size: 22px;
++  font-size: calc(22px * var(--ui-scale));
+   font-weight: 600;
+   line-height: 1.4;
+ }
+@@ -120,7 +120,7 @@
+   gap: 16px;
+   padding: 9px 0;
+   border-top: 1px solid var(--border);
+-  font-size: 12.5px;
++  font-size: calc(12.5px * var(--ui-scale));
+ }
+ 
+ .screen-name {
+@@ -194,7 +194,7 @@
+   padding: 9px 0;
+   border-top: 1px solid var(--border);
+   color: var(--muted);
+-  font-size: 12.5px;
++  font-size: calc(12.5px * var(--ui-scale));
+ }
+ 
+ /* Not `.screen-where`: that one reads right to left so a long path keeps its
+@@ -237,7 +237,7 @@
+   padding: 8px 0;
+   max-height: 60vh;
+   overflow: auto;
+-  font-size: 12.5px;
++  font-size: calc(12.5px * var(--ui-scale));
+   line-height: 1.6;
+ }
+ 
+diff --git a/src/ui/editor.css b/src/ui/editor.css
+index 621e395..3c2135c 100644
+--- a/src/ui/editor.css
++++ b/src/ui/editor.css
+@@ -25,7 +25,7 @@
+   gap: 2px;
+   background: var(--toolbar-bg);
+   color: var(--toolbar-fg);
+-  font-size: 11.5px;
++  font-size: calc(11.5px * var(--ui-scale));
+   line-height: 1;
+   white-space: nowrap;
+   user-select: none;
+@@ -215,7 +215,7 @@
+ }
+ 
+ .cm-rich-h1 {
+-  font-size: 22px;
++  font-size: calc(var(--content-font-size) * 1.6);
+   line-height: 1.3;
+   letter-spacing: -0.01em;
+ }
+@@ -227,3 +227,19 @@
+ .cm-rich-h6 {
+   font-size: var(--content-font-size);
+ }
++
++/* Fork: the same steps as read. */
++.cm-rich-h2 {
++  font-size: calc(var(--content-font-size) * 1.25);
++}
++
++.cm-rich-h3 {
++  font-size: calc(var(--content-font-size) * 1.1);
++}
++
++/* Fork: rich hides the markup, so it reads in the text face, not the
++   source face; edit keeps appearance.editFont. Code stays mono through the
++   highlight style (editor/theme.ts). */
++.content-frame.is-rich {
++  --font-edit: var(--font-text);
++}
+diff --git a/src/ui/formatbar.css b/src/ui/formatbar.css
+index 14972e8..2a645dc 100644
+--- a/src/ui/formatbar.css
++++ b/src/ui/formatbar.css
+@@ -10,7 +10,7 @@
+   padding: 0 14px;
+   border-bottom: 1px solid var(--border);
+   background: var(--bg);
+-  font-size: 11.5px;
++  font-size: calc(11.5px * var(--ui-scale));
+   overflow-x: auto;
+   scrollbar-width: none;
+ }
+diff --git a/src/ui/library.css b/src/ui/library.css
+index bb43212..9003600 100644
+--- a/src/ui/library.css
++++ b/src/ui/library.css
+@@ -134,7 +134,7 @@
+   flex-direction: column;
+   background: var(--modal-bg);
+   border: 1px solid var(--modal-border);
+-  font-size: 12.5px;
++  font-size: calc(12.5px * var(--ui-scale));
+   z-index: 40;
+ }
+ 
+@@ -262,7 +262,7 @@
+ }
+ 
+ .folder-search-title {
+-  font-size: 22px;
++  font-size: calc(22px * var(--ui-scale));
+   font-weight: 600;
+   letter-spacing: -0.01em;
+   margin: 0 0 22px;
+@@ -288,7 +288,7 @@
+   border: 0;
+   background: none;
+   font: inherit;
+-  font-size: 13px;
++  font-size: calc(13px * var(--ui-scale));
+   color: var(--fg);
+   caret-color: var(--accent);
+   outline: none;
+@@ -305,7 +305,7 @@
+   align-items: baseline;
+   gap: 12px;
+   padding: 18px 0 6px;
+-  font-size: 12.5px;
++  font-size: calc(12.5px * var(--ui-scale));
+ }
+ 
+ .folder-search-name {
+@@ -329,7 +329,7 @@
+   width: 100%;
+   padding: 4px 0;
+   border-top: 1px solid var(--border);
+-  font-size: 12.5px;
++  font-size: calc(12.5px * var(--ui-scale));
+   color: var(--muted);
+ }
+ 
+@@ -401,7 +401,7 @@
+ }
+ 
+ .library-title {
+-  font-size: 22px;
++  font-size: calc(22px * var(--ui-scale));
+   font-weight: 600;
+   letter-spacing: -0.01em;
+   margin: 0;
+@@ -453,7 +453,7 @@
+   gap: 16px;
+   padding: 11px 0;
+   border-top: 1px solid var(--border);
+-  font-size: 12.5px;
++  font-size: calc(12.5px * var(--ui-scale));
+   color: var(--fg);
+ }
+ 
+@@ -508,7 +508,7 @@
+   padding: 11px 0;
+   border-top: 1px solid var(--border);
+   color: var(--muted);
+-  font-size: 12.5px;
++  font-size: calc(12.5px * var(--ui-scale));
+ }
+ 
+ .library-foot {
+diff --git a/src/ui/menubar.css b/src/ui/menubar.css
+index e8da80e..076b0de 100644
+--- a/src/ui/menubar.css
++++ b/src/ui/menubar.css
+@@ -70,7 +70,7 @@
+   flex: none;
+   width: 14px;
+   color: var(--accent);
+-  font-size: 9px;
++  font-size: calc(9px * var(--ui-scale));
+   line-height: 1;
+ }
+ 
+diff --git a/src/ui/read.css b/src/ui/read.css
+index 08a2270..1c92064 100644
+--- a/src/ui/read.css
++++ b/src/ui/read.css
+@@ -4,8 +4,10 @@
+ :root {
+   /* OQ-1: H2 is muted in the mockup. Flip this to var(--fg) after living
+      with real text for a while — nothing else needs to change. */
+-  --h2-color: var(--muted);
+-  --code-font-size: 12px;
++  /* Fork: flipped — a grey heading is harder to find on the page. */
++  --h2-color: var(--fg);
++  /* Fork: follows the text size instead of a fixed 12px. */
++  --code-font-size: calc(var(--content-font-size) * 0.88);
+ }
+ 
+ .content.read {
+@@ -25,11 +27,14 @@
+   max-width: calc(var(--content-width) + 40px);
+   margin: 0 auto;
+   padding: 0 20px 120px;
++  font-family: var(--font-text);
+   font-size: var(--content-font-size);
+-  line-height: 1.75;
++  line-height: 1.7;
+ }
+ 
+ .read-meta {
++  /* Fork: the meta line is interface, not text. */
++  font-family: var(--font-ui);
+   font-size: var(--fs-small);
+   color: var(--muted);
+   margin-bottom: 22px;
+@@ -80,7 +85,7 @@
+ }
+ 
+ .read-html h1 {
+-  font-size: 22px;
++  font-size: calc(var(--content-font-size) * 1.6);
+   font-weight: 600;
+   line-height: 1.3;
+   letter-spacing: -0.01em;
+@@ -88,7 +93,9 @@
+ }
+ 
+ .read-html h2 {
+-  font-size: var(--content-font-size);
++  /* Fork: headings step up in size, not only in weight. */
++  font-size: calc(var(--content-font-size) * 1.25);
++  line-height: 1.35;
+   font-weight: 600;
+   color: var(--h2-color);
+   margin: 30px 0 14px;
+@@ -103,6 +110,10 @@
+   margin: 26px 0 12px;
+ }
+ 
++.read-html h3 {
++  font-size: calc(var(--content-font-size) * 1.1);
++}
++
+ .read-html h4,
+ .read-html h5,
+ .read-html h6 {
+@@ -263,7 +274,7 @@
+   border-collapse: collapse;
+   margin: 0 0 20px;
+   max-width: 100%;
+-  font-size: 12.5px;
++  font-size: calc(var(--content-font-size) * 0.93);
+ }
+ 
+ .read-html th,
+@@ -283,7 +294,7 @@
+ /* code -------------------------------------------------------------------- */
+ 
+ .read-html code {
+-  font-family: inherit;
++  font-family: var(--font-code);
+   font-size: var(--code-font-size);
+   background: var(--surface);
+   padding: 1px 4px;
+@@ -461,7 +472,7 @@
+   margin-top: 34px;
+   padding-top: 16px;
+   border-top: 1px solid var(--border);
+-  font-size: 12.5px;
++  font-size: calc(var(--content-font-size) * 0.93);
+   color: var(--muted);
+ }
+ 
+diff --git a/src/ui/settings.css b/src/ui/settings.css
+index 9434e6f..301d2f3 100644
+--- a/src/ui/settings.css
++++ b/src/ui/settings.css
+@@ -27,7 +27,7 @@
+   align-items: baseline;
+   padding: 11px 0;
+   border-top: 1px solid var(--border);
+-  font-size: 12.5px;
++  font-size: calc(12.5px * var(--ui-scale));
+ }
+ 
+ .setting-key {
+@@ -117,6 +117,17 @@
+   outline: none;
+ }
+ 
++/* Fork: appearance.textFont — the presets, then a field for a family name. */
++.setting-font {
++  display: block;
++  width: 170px;
++  margin: 8px 0 0 auto;
++}
++
++.setting-field::placeholder {
++  color: var(--faint);
++}
++
+ /* shortcuts (spec §12) — the same library-style screen as settings */
+ 
+ .keys-group {
+@@ -134,7 +145,7 @@
+   align-items: baseline;
+   padding: 9px 0;
+   border-top: 1px solid var(--border);
+-  font-size: 12.5px;
++  font-size: calc(12.5px * var(--ui-scale));
+ }
+ 
+ .keys-what {
+diff --git a/src/ui/tokens.css b/src/ui/tokens.css
+index 22e0076..eb7601f 100644
+--- a/src/ui/tokens.css
++++ b/src/ui/tokens.css
+@@ -23,26 +23,40 @@
+ 
+   color-scheme: light;
+ 
++  /* Fork: the interface size. settings.json's appearance.uiSize sets it on
++     :root at startup as uiSize / 13; the chrome grows with it. */
++  --ui-scale: 1.077;
++
+   /* geometry */
+   --rail-w: 232px;
+-  --menubar-h: 28px;
+-  --modebar-h: 44px;
+-  --banner-h: 36px;
+-  --statusbar-h: 30px;
++  --menubar-h: calc(28px * var(--ui-scale));
++  --modebar-h: calc(44px * var(--ui-scale));
++  --banner-h: calc(36px * var(--ui-scale));
++  --statusbar-h: calc(30px * var(--ui-scale));
+   --rail-pad-x: 20px;
+ 
+   /* Content metrics; settings.json overrides these on :root at startup (§10). */
+-  --content-font-size: 13.5px;
++  --content-font-size: 15px;
+   --content-width: 560px;
+   --edit-width: 640px;
+ 
+-  /* type */
+-  --font: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+-  --fs-ui: 13px;
+-  --fs-rail: 12px;
+-  --fs-section: 10px;
+-  --fs-small: 11px;
+-  --fs-status: 10.5px;
++  /* type — fork: four families instead of one. The defaults below are what
++     settings.json's appearance.uiFont / textFont / editFont start with;
++     theme.ts overrides them on :root. Code is always the bundled mono. */
++  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
++  --font-sans: -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI Variable Text", "Segoe UI",
++    "Helvetica Neue", Arial, sans-serif;
++  --font-ui: var(--font-sans);
++  --font-text: var(--font-sans);
++  --font-edit: var(--font-mono);
++  --font-code: var(--font-mono);
++  /* Upstream's single family; what still asks for it gets the UI face. */
++  --font: var(--font-ui);
++  --fs-ui: calc(13px * var(--ui-scale));
++  --fs-rail: calc(12px * var(--ui-scale));
++  --fs-section: calc(10px * var(--ui-scale));
++  --fs-small: calc(11px * var(--ui-scale));
++  --fs-status: calc(10.5px * var(--ui-scale));
+   /* Edit keeps the mockup's half-pixel lead under the read column. */
+   --fs-edit: calc(var(--content-font-size) - 0.5px);
+ 
+diff --git a/src-tauri/Info.plist b/src-tauri/Info.plist
+new file mode 100644
+index 0000000..46f5402
+--- /dev/null
++++ b/src-tauri/Info.plist
+@@ -0,0 +1,19 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
++<!-- Fork (Plain RU): Tauri merges this into the bundle's Info.plist. It tells
++     macOS the app speaks Russian, so the system's own panels — open, save,
++     print, the Services menu — follow the user's language instead of
++     falling back to English. -->
++<plist version="1.0">
++<dict>
++  <key>CFBundleDevelopmentRegion</key>
++  <string>ru</string>
++  <key>CFBundleLocalizations</key>
++  <array>
++    <string>ru</string>
++    <string>en</string>
++  </array>
++  <key>CFBundleAllowMixedLocalizations</key>
++  <true/>
++</dict>
++</plist>
+diff --git a/src-tauri/src/lib.rs b/src-tauri/src/lib.rs
+index a18d18f..a0589ec 100644
+--- a/src-tauri/src/lib.rs
++++ b/src-tauri/src/lib.rs
+@@ -69,6 +69,89 @@ pub fn data_dir<R: Runtime>(app: &tauri::AppHandle<R>) -> PathBuf {
+ 
+ /* -------------------------------------------- the macOS application menu */
+ 
++/// Fork: `appearance.language` from settings.json, read once when the menu is
++/// built. The front end owns the file; this only reads it. A missing file, a
++/// broken one or an unknown value means the fork's default, Russian.
++pub fn menu_language(data: &Path) -> String {
++    std::fs::read_to_string(data.join("settings.json"))
++        .ok()
++        .and_then(|text| serde_json::from_str::<serde_json::Value>(&text).ok())
++        .and_then(|json| {
++            json.get("appearance")?
++                .get("language")?
++                .as_str()
++                .map(str::to_owned)
++        })
++        .filter(|language| language == "ru" || language == "en")
++        .unwrap_or_else(|| "ru".to_owned())
++}
++
++/// Fork: the native menu's words. `None` leaves an item to macOS's default
++/// (English) title.
++#[derive(Debug, PartialEq)]
++pub struct MenuWords {
++    pub quit: &'static str,
++    pub about: Option<&'static str>,
++    pub services: Option<&'static str>,
++    pub hide: Option<&'static str>,
++    pub hide_others: Option<&'static str>,
++    pub show_all: Option<&'static str>,
++    pub edit: &'static str,
++    pub undo: Option<&'static str>,
++    pub redo: Option<&'static str>,
++    pub cut: Option<&'static str>,
++    pub copy: Option<&'static str>,
++    pub paste: Option<&'static str>,
++    pub select_all: Option<&'static str>,
++    pub window: &'static str,
++    pub minimize: Option<&'static str>,
++    pub maximize: Option<&'static str>,
++}
++
++impl MenuWords {
++    pub fn for_language(language: &str) -> Self {
++        if language == "en" {
++            return MenuWords {
++                quit: "Quit Plain",
++                about: None,
++                services: None,
++                hide: None,
++                hide_others: None,
++                show_all: None,
++                edit: "Edit",
++                undo: None,
++                redo: None,
++                cut: None,
++                copy: None,
++                paste: None,
++                select_all: None,
++                window: "Window",
++                minimize: None,
++                maximize: None,
++            };
++        }
++        // The titles a Russian macOS uses in its own apps.
++        MenuWords {
++            quit: "Завершить Plain",
++            about: Some("О программе Plain"),
++            services: Some("Службы"),
++            hide: Some("Скрыть Plain"),
++            hide_others: Some("Скрыть остальные"),
++            show_all: Some("Показать все"),
++            edit: "Правка",
++            undo: Some("Отменить"),
++            redo: Some("Повторить"),
++            cut: Some("Вырезать"),
++            copy: Some("Скопировать"),
++            paste: Some("Вставить"),
++            select_all: Some("Выбрать все"),
++            window: "Окно",
++            minimize: Some("Свернуть"),
++            maximize: Some("Изменить масштаб"),
++        }
++    }
++}
++
+ /// The id our own Quit carries, so the handler can tell it from the
+ /// predefined items around it.
+ #[cfg(target_os = "macos")]
+@@ -86,19 +169,22 @@ const QUIT_ID: &str = "plain-quit";
+ fn build_app_menu<R: Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<tauri::menu::Menu<R>> {
+     use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
+ 
+-    let quit = MenuItem::with_id(app, QUIT_ID, "Quit Plain", true, Some("CmdOrCtrl+Q"))?;
++    // Fork: the menu speaks the language settings.json asks for.
++    let words = MenuWords::for_language(&menu_language(&data_dir(app)));
++
++    let quit = MenuItem::with_id(app, QUIT_ID, words.quit, true, Some("CmdOrCtrl+Q"))?;
+     let application = Submenu::with_items(
+         app,
+         "Plain",
+         true,
+         &[
+-            &PredefinedMenuItem::about(app, None, None)?,
++            &PredefinedMenuItem::about(app, words.about, None)?,
+             &PredefinedMenuItem::separator(app)?,
+-            &PredefinedMenuItem::services(app, None)?,
++            &PredefinedMenuItem::services(app, words.services)?,
+             &PredefinedMenuItem::separator(app)?,
+-            &PredefinedMenuItem::hide(app, None)?,
+-            &PredefinedMenuItem::hide_others(app, None)?,
+-            &PredefinedMenuItem::show_all(app, None)?,
++            &PredefinedMenuItem::hide(app, words.hide)?,
++            &PredefinedMenuItem::hide_others(app, words.hide_others)?,
++            &PredefinedMenuItem::show_all(app, words.show_all)?,
+             &PredefinedMenuItem::separator(app)?,
+             &quit,
+         ],
+@@ -108,26 +194,26 @@ fn build_app_menu<R: Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<tauri:
+     // window cannot stand in for them.
+     let edit = Submenu::with_items(
+         app,
+-        "Edit",
++        words.edit,
+         true,
+         &[
+-            &PredefinedMenuItem::undo(app, None)?,
+-            &PredefinedMenuItem::redo(app, None)?,
++            &PredefinedMenuItem::undo(app, words.undo)?,
++            &PredefinedMenuItem::redo(app, words.redo)?,
+             &PredefinedMenuItem::separator(app)?,
+-            &PredefinedMenuItem::cut(app, None)?,
+-            &PredefinedMenuItem::copy(app, None)?,
+-            &PredefinedMenuItem::paste(app, None)?,
+-            &PredefinedMenuItem::select_all(app, None)?,
++            &PredefinedMenuItem::cut(app, words.cut)?,
++            &PredefinedMenuItem::copy(app, words.copy)?,
++            &PredefinedMenuItem::paste(app, words.paste)?,
++            &PredefinedMenuItem::select_all(app, words.select_all)?,
+         ],
+     )?;
+ 
+     let window = Submenu::with_items(
+         app,
+-        "Window",
++        words.window,
+         true,
+         &[
+-            &PredefinedMenuItem::minimize(app, None)?,
+-            &PredefinedMenuItem::maximize(app, None)?,
++            &PredefinedMenuItem::minimize(app, words.minimize)?,
++            &PredefinedMenuItem::maximize(app, words.maximize)?,
+         ],
+     )?;
+ 
+@@ -433,9 +519,31 @@ pub fn run() {
+ 
+ #[cfg(test)]
+ mod tests {
+-    use super::{folder_args, path_args, pick_data_dir};
++    use super::{folder_args, menu_language, path_args, pick_data_dir, MenuWords};
+     use std::path::Path;
+ 
++    /// Fork: the native menu reads `appearance.language`, Russian by default.
++    #[test]
++    fn the_menu_language_comes_from_settings_json() {
++        let dir = tempfile::tempdir().unwrap();
++        let file = dir.path().join("settings.json");
++
++        assert_eq!(menu_language(dir.path()), "ru", "no file yet");
++
++        std::fs::write(&file, r#"{ "appearance": { "language": "en" } }"#).unwrap();
++        assert_eq!(menu_language(dir.path()), "en");
++
++        std::fs::write(&file, r#"{ "appearance": { "language": "de" } }"#).unwrap();
++        assert_eq!(menu_language(dir.path()), "ru", "an unknown value");
++
++        std::fs::write(&file, "{ broken").unwrap();
++        assert_eq!(menu_language(dir.path()), "ru", "a broken file");
++
++        assert_eq!(MenuWords::for_language("ru").edit, "Правка");
++        assert_eq!(MenuWords::for_language("en").quit, "Quit Plain");
++        assert_eq!(MenuWords::for_language("en").copy, None);
++    }
++
+     /// §2a: a `data` folder next to the exe takes over from %APPDATA%, and
+     /// nothing else does.
+     #[test]
+diff --git a/vitest.setup.ts b/vitest.setup.ts
+index afe31cc..57b2d8f 100644
+--- a/vitest.setup.ts
++++ b/vitest.setup.ts
+@@ -16,3 +16,11 @@ import { setMacForTests } from "./src/app/platform";
+ setMacForTests(false);
+ 
+ beforeEach(() => setMacForTests(false));
++
++// Fork: the upstream tests read English microcopy, so the interface language
++// is pinned the same way. The fork's own i18n tests unpin it themselves.
++import { setLanguageForTests } from "./src/i18n";
++
++setLanguageForTests("en");
++
++beforeEach(() => setLanguageForTests("en"));
