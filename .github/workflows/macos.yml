@@ -43,6 +43,10 @@ jobs:
         with:
           persist-credentials: false
 
+      # Plain RU: the fork's changes live in one patch at the repository root.
+      - name: Apply the Plain RU patch
+        run: git apply --verbose plain-ru.patch
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
